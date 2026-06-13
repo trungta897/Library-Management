@@ -1999,6 +1999,413 @@ Là một người dùng, tôi muốn gửi yêu cầu hỗ trợ/tư vấn qua 
 * Hiển thị mã yêu cầu để theo dõi
 
 ---
+
+### **US-34: Tìm kiếm thông tin độc giả tại quầy (Librarian/Staff)**
+
+#### **User Story Statement**
+
+Là Thủ thư/Nhân viên, tôi muốn tìm kiếm nhanh thông tin tài khoản độc giả theo SĐT, email hoặc mã thẻ thư viện (QR code) khi độc giả đến trực tiếp tại quầy, để xác định danh tính và phục vụ quy trình mượn sách tại chỗ.
+
+#### **Luồng Người dùng (User Flow)**
+
+**Luồng chính: Tìm kiếm độc giả đã có tài khoản**
+
+1\. Độc giả đến quầy thư viện muốn mượn sách
+
+2\. Staff truy cập chức năng "Tìm kiếm độc giả" trên giao diện quản lý
+
+3\. Staff tìm kiếm bằng một trong các cách:
+
+   \- Nhập SĐT hoặc email vào ô tìm kiếm
+
+   \- Quét mã QR trên thẻ thư viện/điện thoại của độc giả
+
+   \- Nhập mã thẻ thư viện thủ công
+
+4\. Hệ thống trả về kết quả:
+
+   \- Họ tên, email, SĐT, ảnh đại diện
+
+   \- Hạng thành viên (nếu có)
+
+   \- Số sách đang mượn / Giới hạn mượn đồng thời
+
+   \- Trạng thái tài khoản (Active/Locked)
+
+   \- Lịch sử mượn sách gần đây (5 phiếu gần nhất)
+
+   \- Khoản phạt chưa thanh toán (nếu có)
+
+5\. Staff xác nhận đúng người và tiếp tục quy trình tạo phiếu mượn
+
+**Luồng phụ: Độc giả chưa có tài khoản (vãng lai)**
+
+1\. Staff tìm kiếm nhưng không tìm thấy kết quả
+
+2\. Hệ thống hiển thị thông báo "Không tìm thấy độc giả" kèm nút "Tạo hồ sơ độc giả vãng lai"
+
+3\. Staff click "Tạo hồ sơ độc giả vãng lai":
+
+   \- Nhập: Họ tên (bắt buộc), SĐT (bắt buộc), Email (tùy chọn), CMND/CCCD (bắt buộc)
+
+4\. Hệ thống tạo hồ sơ độc giả vãng lai (role: WALK_IN_CUSTOMER) với trạng thái đặc biệt
+
+5\. Staff tiếp tục quy trình tạo phiếu mượn cho độc giả vãng lai
+
+**Luồng ngoại lệ: Tài khoản bị khóa hoặc có nợ phạt**
+
+1\. Nếu tài khoản ở trạng thái LOCKED: hiển thị cảnh báo "Tài khoản đã bị khóa — Không thể tạo phiếu mượn"
+
+2\. Nếu có khoản phạt chưa thanh toán: hiển thị cảnh báo "Độc giả có khoản phạt chưa thanh toán: X VND", cho phép Staff yêu cầu thanh toán trước hoặc ghi nhận nợ
+
+#### **Tiêu chí Chấp nhận (Acceptance Criteria)**
+
+**AC-01: Tìm kiếm độc giả bằng SĐT thành công**
+
+**Given**: Độc giả có tài khoản với SĐT "0901234567" trong hệ thống
+**When**: Staff nhập "0901234567" vào ô tìm kiếm và submit
+**Then**:
+
+* Hiển thị thông tin đầy đủ của độc giả (họ tên, email, hạng thành viên, số sách đang mượn)
+* Hiển thị lịch sử mượn sách gần đây
+* Hiển thị khoản phạt chưa thanh toán (nếu có)
+
+**AC-02: Tìm kiếm bằng QR code thành công**
+
+**Given**: Độc giả đưa mã QR thẻ thư viện cho Staff
+**When**: Staff quét QR bằng camera/đầu đọc
+**Then**:
+
+* Hệ thống tự động nhận diện mã thẻ và hiển thị thông tin độc giả
+* Thời gian phản hồi < 2 giây
+
+**AC-03: Tạo hồ sơ độc giả vãng lai thành công**
+
+**Given**: Không tìm thấy độc giả trong hệ thống
+**When**: Staff nhập đầy đủ Họ tên, SĐT, CMND/CCCD và click "Tạo hồ sơ"
+**Then**:
+
+* Hồ sơ độc giả vãng lai được tạo
+* Hệ thống tự động gán mã thẻ thư viện tạm thời
+* Staff có thể tiếp tục tạo phiếu mượn cho độc giả vãng lai
+
+**AC-04: Cảnh báo tài khoản bị khóa**
+
+**Given**: Độc giả có tài khoản ở trạng thái LOCKED
+**When**: Staff tìm kiếm và xem thông tin
+**Then**:
+
+* Hiển thị cảnh báo đỏ "Tài khoản đã bị khóa"
+* Nút "Tạo phiếu mượn" bị vô hiệu hóa (disabled)
+* Hiển thị lý do khóa (nếu có)
+
+**AC-05: Cảnh báo nợ phạt chưa thanh toán**
+
+**Given**: Độc giả có khoản phạt 50.000 VND chưa thanh toán
+**When**: Staff tìm kiếm và xem thông tin
+**Then**:
+
+* Hiển thị cảnh báo cam "Có khoản phạt chưa thanh toán: 50.000 VND"
+* Hiển thị nút "Thu phạt ngay" để xử lý trước khi tạo phiếu mượn mới
+
+---
+
+### **US-35: Tạo phiếu mượn trực tiếp tại quầy — Walk-in Borrow (Librarian/Staff)**
+
+#### **User Story Statement**
+
+Là Thủ thư/Nhân viên, tôi muốn tạo phiếu mượn trực tiếp tại quầy cho độc giả đến thư viện (bao gồm cả độc giả đã có tài khoản và độc giả vãng lai chưa dùng app), chọn sách từ kho thực tế, nhập ngày mượn/ngày trả, xác nhận giao sách ngay tại chỗ — mà không cần độc giả phải đăng nhập app hay qua bước duyệt online, để phục vụ mượn sách tại chỗ nhanh chóng.
+
+#### **Luồng Người dùng (User Flow)**
+
+**Luồng chính: Tạo phiếu mượn trực tiếp cho độc giả đã có tài khoản**
+
+1\. Độc giả mang sách muốn mượn đến quầy thủ thư
+
+2\. Staff tìm kiếm độc giả (theo US-34) và xác nhận danh tính
+
+3\. Staff click "Tạo phiếu mượn trực tiếp"
+
+4\. Hệ thống hiển thị form tạo phiếu mượn tại quầy:
+
+   \- Thông tin độc giả (read-only, đã chọn ở bước trước)
+
+   \- Danh sách sách mượn: Staff thêm sách bằng cách:
+
+     \+ Quét mã vạch ISBN trên sách
+
+     \+ Hoặc tìm kiếm theo tên sách / mã sách
+
+   \- Ngày mượn (mặc định: ngày hiện tại)
+
+   \- Ngày hẹn trả (mặc định: ngày hiện tại + số ngày mượn tối đa theo cấu hình)
+
+   \- Phương thức thanh toán tiền cọc: Tiền mặt / Miễn cọc (tùy hạng thành viên)
+
+   \- Ghi chú (tùy chọn)
+
+5\. Staff kiểm tra và click "Xác nhận tạo phiếu"
+
+6\. Hệ thống validate:
+
+   \- Sách còn trong kho (tồn kho > 0)
+
+   \- Độc giả chưa vượt giới hạn mượn đồng thời
+
+   \- Tài khoản không bị khóa và không có nợ phạt (hoặc đã xử lý)
+
+   \- Ngày hẹn trả hợp lệ
+
+7\. Nếu hợp lệ:
+
+   \- Tạo phiếu mượn với trạng thái **"Đang mượn"** (bỏ qua bước "Chờ duyệt" và "Chờ lấy")
+
+   \- Trừ tồn kho ngay lập tức
+
+   \- Ghi nhận tiền cọc (nếu có)
+
+   \- In/gửi biên nhận cho độc giả (tùy chọn: in giấy hoặc gửi email/SMS)
+
+   \- Ghi nhận audit log: Staff nào tạo, thời gian, IP
+
+   \- Phiếu mượn xuất hiện trong lịch sử mượn sách của độc giả (nếu có tài khoản)
+
+**Luồng phụ: Tạo phiếu mượn cho độc giả vãng lai**
+
+1\. Staff tạo hồ sơ độc giả vãng lai (theo US-34, luồng phụ)
+
+2\. Tiếp tục quy trình tạo phiếu mượn trực tiếp như luồng chính
+
+3\. Bắt buộc thu tiền cọc bằng tiền mặt (không cho miễn cọc)
+
+4\. Bắt buộc ghi nhận CMND/CCCD của độc giả vãng lai
+
+**Luồng phụ: Thêm nhiều sách vào cùng một phiếu**
+
+1\. Staff quét lần lượt mã vạch ISBN của các cuốn sách
+
+2\. Mỗi lần quét, sách được thêm vào danh sách trên phiếu mượn
+
+3\. Hiển thị số lượng sách hiện tại / giới hạn mượn đồng thời còn lại
+
+4\. Nếu vượt giới hạn: cảnh báo và không cho thêm
+
+**Luồng ngoại lệ: Sách hết tồn kho**
+
+1\. Staff thêm sách nhưng tồn kho = 0
+
+2\. Hệ thống hiển thị cảnh báo "Sách [Tên sách] hiện không còn trong kho"
+
+3\. Gợi ý "Đặt giữ chỗ cho độc giả?" nếu độc giả muốn đợi
+
+**Luồng ngoại lệ: Tranh chấp tồn kho giữa online và offline**
+
+1\. Staff tạo phiếu tại quầy đồng thời có Customer đặt mượn online cùng cuốn sách cuối cùng
+
+2\. Hệ thống sử dụng cơ chế lock (Pessimistic locking) — ưu tiên giao dịch submit trước
+
+3\. Giao dịch submit sau nhận thông báo "Sách vừa hết"
+
+#### **Tiêu chí Chấp nhận (Acceptance Criteria)**
+
+**AC-01: Tạo phiếu mượn trực tiếp thành công — Độc giả đã có tài khoản**
+
+**Given**: Staff đã xác nhận danh tính độc giả (tài khoản Active, chưa vượt giới hạn mượn)
+**When**: Thêm sách (quét ISBN hoặc tìm kiếm), chọn ngày trả, chọn phương thức cọc và click "Xác nhận tạo phiếu"
+**Then**:
+
+* Phiếu mượn được tạo với trạng thái **"Đang mượn"** (không qua "Chờ duyệt")
+* Tồn kho sách giảm tương ứng
+* Tiền cọc được ghi nhận (nếu có)
+* Biên nhận được tạo (có thể in hoặc gửi email)
+* Phiếu mượn hiển thị trong lịch sử mượn của độc giả
+* Audit log ghi nhận hành động
+
+**AC-02: Tạo phiếu mượn trực tiếp cho độc giả vãng lai**
+
+**Given**: Độc giả chưa có tài khoản, Staff đã tạo hồ sơ vãng lai
+**When**: Staff tạo phiếu mượn trực tiếp cho độc giả vãng lai
+**Then**:
+
+* Phiếu mượn được tạo và liên kết với hồ sơ vãng lai
+* Bắt buộc thu tiền cọc bằng tiền mặt
+* CMND/CCCD được ghi nhận trên phiếu
+* Biên nhận kèm thông tin phiếu mượn được in/gửi cho độc giả
+
+**AC-03: Quét ISBN thêm sách nhanh**
+
+**Given**: Staff đang tạo phiếu mượn trực tiếp
+**When**: Quét mã vạch ISBN trên cuốn sách
+**Then**:
+
+* Sách được tự động nhận diện và thêm vào danh sách phiếu mượn
+* Hiển thị: tên sách, tác giả, giá cọc, tồn kho hiện tại
+* Thời gian phản hồi < 1 giây
+
+**AC-04: Không cho mượn khi vượt giới hạn**
+
+**Given**: Độc giả đang mượn số sách bằng giới hạn tối đa (theo cấu hình)
+**When**: Staff thử thêm sách vào phiếu mượn
+**Then**:
+
+* Hiển thị thông báo "Độc giả đã đạt giới hạn mượn sách đồng thời (X/X). Không thể thêm sách."
+* Không cho tạo phiếu mượn
+
+**AC-05: Đồng bộ tồn kho giữa online và offline**
+
+**Given**: Sách còn 1 bản, đồng thời có Customer đặt mượn online và Staff tạo phiếu tại quầy
+**When**: Cả hai submit gần như đồng thời
+**Then**:
+
+* Giao dịch submit trước thành công
+* Giao dịch submit sau nhận thông báo "Sách vừa hết"
+* Tồn kho không bị âm
+* Cơ chế lock đảm bảo tính nhất quán dữ liệu
+
+**AC-06: Phiếu mượn tại quầy xuất hiện trong lịch sử online của độc giả**
+
+**Given**: Staff tạo phiếu mượn tại quầy cho độc giả có tài khoản
+**When**: Độc giả đăng nhập app và xem "Lịch sử mượn sách"
+**Then**:
+
+* Phiếu mượn tại quầy hiển thị với nhãn "Mượn tại quầy" hoặc nguồn "Walk-in"
+* Thông tin đầy đủ: tên sách, ngày mượn, ngày hẹn trả, tiền cọc
+* Độc giả có thể yêu cầu gia hạn phiếu mượn tại quầy thông qua app
+
+---
+
+### **US-36: Thu tiền cọc và tiền phạt tại quầy (Librarian/Staff)**
+
+#### **User Story Statement**
+
+Là Thủ thư/Nhân viên, tôi muốn ghi nhận thanh toán tiền mặt cho tiền cọc khi tạo phiếu mượn tại quầy hoặc tiền phạt khi độc giả trả sách quá hạn, in/gửi biên nhận cho độc giả, để đảm bảo thu chi tại quầy được ghi nhận minh bạch trên hệ thống.
+
+#### **Luồng Người dùng (User Flow)**
+
+**Luồng chính: Thu tiền cọc khi tạo phiếu mượn tại quầy**
+
+1\. Staff tạo phiếu mượn trực tiếp (theo US-35)
+
+2\. Hệ thống tính tiền cọc tự động dựa trên cấu hình (tỷ lệ % giá sách)
+
+3\. Hiển thị tổng tiền cọc cần thu
+
+4\. Staff xác nhận đã nhận tiền mặt từ độc giả
+
+5\. Hệ thống:
+
+   \- Ghi nhận thanh toán với phương thức "Tiền mặt tại quầy"
+
+   \- Cập nhật trạng thái cọc trên phiếu mượn: "Đã thu cọc"
+
+   \- Tạo biên nhận thu tiền cọc
+
+   \- Staff có thể: in biên nhận giấy hoặc gửi biên nhận qua email/SMS
+
+**Luồng phụ: Thu tiền phạt khi trả sách quá hạn tại quầy**
+
+1\. Độc giả đến trả sách quá hạn
+
+2\. Staff xác nhận trả sách (theo US-20)
+
+3\. Hệ thống tự động tính tiền phạt = (số ngày quá hạn) × (mức phạt/ngày theo cấu hình)
+
+4\. Hiển thị chi tiết tiền phạt cho Staff:
+
+   \- Tên sách, ngày hẹn trả, ngày trả thực tế, số ngày trễ, đơn giá phạt/ngày, tổng phạt
+
+5\. Staff thông báo cho độc giả và thu tiền mặt
+
+6\. Staff click "Xác nhận đã thu phạt"
+
+7\. Hệ thống:
+
+   \- Ghi nhận thanh toán tiền phạt
+
+   \- Cập nhật trạng thái khoản phạt: "Đã thanh toán"
+
+   \- Tạo biên nhận thu tiền phạt
+
+   \- Hoàn lại tiền cọc nếu có (trừ tiền phạt từ tiền cọc hoặc hoàn riêng)
+
+**Luồng phụ: Hoàn tiền cọc khi trả sách đúng hạn tại quầy**
+
+1\. Độc giả trả sách đúng hạn, sách nguyên vẹn
+
+2\. Staff xác nhận trả sách
+
+3\. Hệ thống hiển thị: "Hoàn cọc: X VND"
+
+4\. Staff hoàn tiền cọc bằng tiền mặt cho độc giả
+
+5\. Staff click "Xác nhận đã hoàn cọc"
+
+6\. Hệ thống ghi nhận hoàn cọc, tạo biên nhận
+
+**Luồng ngoại lệ: Sách bị hư hỏng**
+
+1\. Staff ghi nhận sách trả bị hư hỏng
+
+2\. Hệ thống tính phí bồi thường theo chính sách (% giá sách hoặc toàn bộ giá sách)
+
+3\. Staff thu tiền bồi thường + tiền phạt quá hạn (nếu có)
+
+4\. Ghi nhận trên hệ thống, tạo biên nhận
+
+#### **Tiêu chí Chấp nhận (Acceptance Criteria)**
+
+**AC-01: Thu tiền cọc thành công**
+
+**Given**: Staff tạo phiếu mượn trực tiếp, tiền cọc = 30.000 VND
+**When**: Staff xác nhận đã thu tiền mặt
+**Then**:
+
+* Phiếu mượn ghi nhận cọc 30.000 VND, phương thức "Tiền mặt tại quầy"
+* Biên nhận được tạo với mã biên nhận duy nhất
+* Biên nhận hiển thị: tên độc giả, tên sách, số tiền cọc, ngày thu, Staff thu tiền
+* Có thể in biên nhận hoặc gửi qua email/SMS
+
+**AC-02: Thu tiền phạt quá hạn thành công**
+
+**Given**: Độc giả trả sách trễ 3 ngày, mức phạt 5.000 VND/ngày → Tổng phạt = 15.000 VND
+**When**: Staff click "Xác nhận đã thu phạt"
+**Then**:
+
+* Khoản phạt 15.000 VND được ghi nhận "Đã thanh toán"
+* Biên nhận thu phạt được tạo với chi tiết: ngày hẹn trả, ngày trả thực tế, số ngày trễ, đơn giá, tổng phạt
+* Phiếu mượn cập nhật trạng thái "Đã trả — Đã thu phạt"
+
+**AC-03: Hoàn tiền cọc khi trả sách đúng hạn**
+
+**Given**: Độc giả trả sách đúng hạn, sách nguyên vẹn, đã đóng cọc 30.000 VND
+**When**: Staff xác nhận trả sách và hoàn cọc
+**Then**:
+
+* Cọc 30.000 VND được ghi nhận "Đã hoàn"
+* Biên nhận hoàn cọc được tạo
+* Phiếu mượn cập nhật trạng thái "Đã trả — Đã hoàn cọc"
+
+**AC-04: Xử lý sách hư hỏng**
+
+**Given**: Sách trả bị hư hỏng, giá sách 200.000 VND, chính sách bồi thường 50%
+**When**: Staff ghi nhận hư hỏng và thu tiền bồi thường
+**Then**:
+
+* Phí bồi thường = 100.000 VND được ghi nhận
+* Nếu có tiền cọc: trừ bồi thường từ cọc, hoàn phần chênh lệch (hoặc thu thêm)
+* Biên nhận bồi thường được tạo
+* Sách được đánh dấu "Hư hỏng" trong hệ thống kho
+
+**AC-05: Biên nhận đầy đủ thông tin**
+
+**Given**: Staff thu tiền cọc hoặc phạt
+**When**: Biên nhận được tạo
+**Then**:
+
+* Biên nhận chứa: mã biên nhận, tên thư viện, tên độc giả, danh sách sách, loại giao dịch (cọc/phạt/bồi thường/hoàn cọc), số tiền, ngày giờ, tên Staff thu tiền
+* Biên nhận có thể in (A5/thermal printer) hoặc gửi email/SMS
+
+---
 ---
 
 ## **3. Bảng tổng hợp User Stories**
@@ -2010,7 +2417,7 @@ Là một người dùng, tôi muốn gửi yêu cầu hỗ trợ/tư vấn qua 
 | US-03 | Xem trang chủ | Guest/Customer | Cao |
 | US-04 | Xem danh sách sách và Tìm kiếm (bao gồm AI Semantic Search) | Guest/Customer | Cao |
 | US-05 | Xem chi tiết sách | Guest/Customer | Cao |
-| US-06 | Đặt mượn sách | Customer | Cao |
+| US-06 | Đặt mượn sách (Online) | Customer | Cao |
 | US-07 | Hủy phiếu mượn | Customer | Trung bình |
 | US-08 | Gia hạn phiếu mượn | Customer | Trung bình |
 | US-09 | Đặt giữ chỗ sách (Reservation) | Customer | Trung bình |
@@ -2024,7 +2431,7 @@ Là một người dùng, tôi muốn gửi yêu cầu hỗ trợ/tư vấn qua 
 | US-17 | Tra cứu phiếu mượn nhanh | Guest/Customer | Thấp |
 | US-18 | Quản lý kho sách (CRUD sách, danh mục, tác giả, NXB, nhà cung cấp) | Librarian/Staff | Cao |
 | US-19 | Quản lý nhập kho sách | Librarian/Staff | Cao |
-| US-20 | Phê duyệt và quản lý phiếu mượn | Librarian/Staff | Cao |
+| US-20 | Phê duyệt và quản lý phiếu mượn (Online) | Librarian/Staff | Cao |
 | US-21 | Kiểm duyệt đánh giá/bình luận | Librarian/Staff | Thấp |
 | US-22 | Quản lý tài khoản người dùng | Admin | Cao |
 | US-23 | Quản lý vai trò và Phân quyền chi tiết | Admin | Cao |
@@ -2038,3 +2445,6 @@ Là một người dùng, tôi muốn gửi yêu cầu hỗ trợ/tư vấn qua 
 | US-31 | Cấu hình hệ thống | Admin | Trung bình |
 | US-32 | Xem thông tin Giới thiệu & Liên hệ | Guest/Customer | Thấp |
 | US-33 | Gửi yêu cầu hỗ trợ / Tư vấn | Guest/Customer | Thấp |
+| **US-34** | **Tìm kiếm thông tin độc giả tại quầy** | **Librarian/Staff** | **Cao** |
+| **US-35** | **Tạo phiếu mượn trực tiếp tại quầy (Walk-in Borrow)** | **Librarian/Staff** | **Cao** |
+| **US-36** | **Thu tiền cọc và tiền phạt tại quầy** | **Librarian/Staff** | **Cao** |
