@@ -304,6 +304,10 @@
 
 4. **Yêu cầu về cơ sở dữ liệu (Database requirements):**  
    1. **Sơ đồ (Diagram):**  
+      Link thông tin Diagram:  
+      [**https://dbdiagram.io/d/Library-6a2cdf6f9340ecc0658b989c**](https://dbdiagram.io/d/Library-6a2cdf6f9340ecc0658b989c)   
    2. **Bảng và ràng buộc (Table & Constraints):**  
+      Link thông tin các bảng:  
+      [**https://docs.google.com/spreadsheets/d/1xNl4S2yoYfcRpava8vK\_6vZB0d1ll9vBFNOhxtIEoEA/edit?gid=0\#gid=0**](https://docs.google.com/spreadsheets/d/1xNl4S2yoYfcRpava8vK_6vZB0d1ll9vBFNOhxtIEoEA/edit?gid=0#gid=0)   
    3. **Sơ đồ luồng (Data Flow Diagram):**  
    4. **Các sơ đồ use-case:**
