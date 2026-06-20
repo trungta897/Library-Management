@@ -39,9 +39,7 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased text-ink-950`}
       >
-        <div className="flex min-h-screen bg-[#FAFAFB]">
-          <main className="flex-1 overflow-y-auto">{children}</main>
-        </div>
+        {children}
       </body>
     </html>
   );
