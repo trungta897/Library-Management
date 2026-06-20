@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   description: "Hệ thống quản lý thư viện",
 };
 
+import ThemeProvider from "@/providers/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
