@@ -1,17 +1,23 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Mail, Lock } from "lucide-react";
 import { useState } from "react";
 
 import { BaseButton } from "@/components/base/base-button";
 import { BaseInput } from "@/components/base/base-input";
+import { useAuth } from "@/providers/auth";
 
 export function LoginForm() {
+  const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string }>(
     {}
   );
@@ -34,10 +40,25 @@ export function LoginForm() {
       return;
     }
     setErrors({});
+    setErrorMessage("");
+    setSuccessMessage("");
     setIsLoading(true);
     try {
-      // TODO: replace with real auth call
-      await new Promise((r) => setTimeout(r, 1000));
+      const user = await login(email, password);
+      setSuccessMessage("Đăng nhập thành công! Đang chuyển hướng...");
+      setTimeout(() => {
+        if (user && user.role === "admin") {
+          router.push("/admin");
+        } else {
+          router.push("/");
+        }
+      }, 1500);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Đăng nhập thất bại. Vui lòng thử lại."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -55,8 +76,29 @@ export function LoginForm() {
         </p>
       </div>
 
+      {/* ✅ Alerts */}
+      {successMessage && (
+        <div className="mb-5 p-4 rounded-lg bg-green-50 dark:bg-green-950/20 border border-green-500 text-green-700 dark:text-green-400 flex items-start gap-3 animate-fade-in text-sm">
+          <span className="flex-shrink-0">✅</span>
+          <span>{successMessage}</span>
+        </div>
+      )}
+
+      {errorMessage && (
+        <div className="mb-5 p-4 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-500 text-red-700 dark:text-red-400 flex items-start gap-3 animate-fade-in text-sm">
+          <span className="flex-shrink-0">⚠️</span>
+          <span>{errorMessage}</span>
+        </div>
+      )}
+
       {/* Form fields */}
-      <div className="space-y-5">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+        className="space-y-5"
+      >
         <BaseInput
           label="Email Address"
           type="email"
@@ -104,11 +146,11 @@ export function LoginForm() {
           </div>
         </div>
 
-        <BaseButton isLoading={isLoading} onClick={handleSubmit}>
+        <BaseButton type="submit" isLoading={isLoading}>
           <span>Sign In</span>
           <ArrowRight size={18} strokeWidth={1.5} aria-hidden="true" />
         </BaseButton>
-      </div>
+      </form>
 
       {/* Divider */}
       <div className="my-8 flex items-center gap-4">
