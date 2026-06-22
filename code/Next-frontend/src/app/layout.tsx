@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 };
 
 import ThemeProvider from "@/providers/ThemeProvider";
+import { AuthProvider } from "@/providers/auth";
 
 export default function RootLayout({
   children,
@@ -44,7 +45,11 @@ export default function RootLayout({
       <body
         className={`${fraunces.variable} ${inter.variable} ${jetbrainsMono.variable} font-sans antialiased bg-background dark:bg-slate-950 text-ink-950 dark:text-white transition-colors duration-200`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
