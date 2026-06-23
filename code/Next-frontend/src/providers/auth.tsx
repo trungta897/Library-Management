@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react'
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react'
 import { signIn, signOut, useSession } from 'next-auth/react'
 import { authService } from '@/services/auth'
 
@@ -51,15 +51,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(false)
 
   // 🔄 Sync user from NextAuth session (Google login + Credentials)
-  const user: User | null = session?.user
-    ? {
-      id: session.user.id ?? session.user.email ?? '',
-      email: session.user.email ?? '',
-      fullName: session.user.name ?? '',
-      role: session.user.role ?? 'USER',
-      image: session.user.image ?? undefined,
-    }
-    : null
+  const user: User | null = useMemo(() => (
+    session?.user
+      ? {
+        id: session.user.id ?? session.user.email ?? '',
+        email: session.user.email ?? '',
+        fullName: session.user.name ?? '',
+        role: session.user.role ?? 'USER',
+        image: session.user.image ?? undefined,
+      }
+      : null
+  ), [session?.user])
 
   // 🔓 Email/Password Login
   const login = useCallback(async (email: string, password: string, rememberMe?: boolean) => {
