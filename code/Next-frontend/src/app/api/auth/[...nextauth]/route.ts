@@ -5,151 +5,151 @@ import CredentialsProvider from "next-auth/providers/credentials";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8081";
 
 async function refreshAccessToken(token: any) {
-  try {
-    const res = await fetch(`${API_URL}/api/auth/refresh`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: token.refreshToken }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      throw new Error(data.message || "Refresh token failed");
-    }
-
-    return {
-      ...token,
-      backendToken: data.data.token,
-      refreshToken: data.data.refreshToken ?? token.refreshToken,
-      expiresAt: Date.now() + 15 * 60 * 1000, // 15 mins
-    };
-  } catch (error) {
-    console.error("Error refreshing token:", error);
-    return {
-      ...token,
-      error: "RefreshAccessTokenError",
-    };
-  }
-}
-
-const authOptions: NextAuthOptions = {
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    CredentialsProvider({
-      name: "Credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-
-        try {
-          const res = await fetch(`${API_URL}/api/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: credentials.email,
-              password: credentials.password,
-            }),
-          });
-
-          const data = await res.json();
-          if (data.success && data.data) {
-            return {
-              id: String(data.data.user.id),
-              email: data.data.user.email,
-              name: data.data.user.fullName,
-              role: data.data.user.role,
-              backendToken: data.data.token,
-              refreshToken: data.data.refreshToken,
-            };
-          }
-          return null;
-        } catch (e) {
-          return null;
-        }
-      }
-    })
-  ],
-
-  session: { strategy: "jwt" },
-
-  callbacks: {
-    async jwt({ token, user, account, profile }) {
-      // Initial sign in
-      if (user || (account && profile)) {
-        if (account?.provider === "google") {
-          // Sync Google Login
-          try {
-            const res = await fetch(`${API_URL}/api/auth/google`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ email: profile?.email, fullName: profile?.name }),
-            });
-            const data = await res.json();
-            if (data.success && data.data) {
-              token.backendToken = data.data.token;
-              token.refreshToken = data.data.refreshToken;
-              token.id = String(data.data.user.id);
-              token.role = data.data.user.role;
-              token.expiresAt = Date.now() + 15 * 60 * 1000;
-            }
-          } catch (e) {
-            console.error(e);
-          }
-        } else if (user) {
-          // Credentials login
-          token.backendToken = (user as any).backendToken;
-          token.refreshToken = (user as any).refreshToken;
-          token.id = user.id;
-          token.role = (user as any).role;
-          token.expiresAt = Date.now() + 15 * 60 * 1000;
-        }
-        return token;
-      }
-
-      // Check if access token is expired
-      if (Date.now() < (token.expiresAt as number)) {
-        return token;
-      }
-
-      // Access token expired, refresh it
-      return refreshAccessToken(token);
-    },
-
-    async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.backendToken = token.backendToken as string;
-        session.error = token.error as string;
-      }
-      return session;
-    },
-  },
-
-  events: {
-    async signOut({ token }) {
-      if (token?.refreshToken) {
-        try {
-          await fetch(`${API_URL}/api/auth/logout`, {
+    try {
+        const res = await fetch(`${API_URL}/api/auth/refresh`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ refreshToken: token.refreshToken }),
-          });
-        } catch (e) {
-          console.error("Failed to call backend logout", e);
-        }
-      }
-    }
-  },
+        });
 
-  pages: { signIn: "/login" },
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+            throw new Error(data.message || "Refresh token failed");
+        }
+
+        return {
+            ...token,
+            backendToken: data.data.token,
+            refreshToken: data.data.refreshToken ?? token.refreshToken,
+            expiresAt: Date.now() + 15 * 60 * 1000, // 15 mins
+        };
+    } catch (error) {
+        console.error("Error refreshing token:", error);
+        return {
+            ...token,
+            error: "RefreshAccessTokenError",
+        };
+    }
+}
+
+const authOptions: NextAuthOptions = {
+    providers: [
+        GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+        }),
+        CredentialsProvider({
+            name: "Credentials",
+            credentials: {
+                email: { label: "Email", type: "email" },
+                password: { label: "Password", type: "password" }
+            },
+            async authorize(credentials) {
+                if (!credentials?.email || !credentials?.password) return null;
+
+                try {
+                    const res = await fetch(`${API_URL}/api/auth/login`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            email: credentials.email,
+                            password: credentials.password,
+                        }),
+                    });
+
+                    const data = await res.json();
+                    if (data.success && data.data) {
+                        return {
+                            id: String(data.data.user.id),
+                            email: data.data.user.email,
+                            name: data.data.user.fullName,
+                            role: data.data.user.role,
+                            backendToken: data.data.token,
+                            refreshToken: data.data.refreshToken,
+                        };
+                    }
+                    return null;
+                } catch (e) {
+                    return null;
+                }
+            }
+        })
+    ],
+
+    session: { strategy: "jwt" },
+
+    callbacks: {
+        async jwt({ token, user, account, profile }) {
+            // Initial sign in
+            if (user || (account && profile)) {
+                if (account?.provider === "google") {
+                    // Sync Google Login
+                    try {
+                        const res = await fetch(`${API_URL}/api/auth/google`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ email: profile?.email, fullName: profile?.name }),
+                        });
+                        const data = await res.json();
+                        if (data.success && data.data) {
+                            token.backendToken = data.data.token;
+                            token.refreshToken = data.data.refreshToken;
+                            token.id = String(data.data.user.id);
+                            token.role = data.data.user.role;
+                            token.expiresAt = Date.now() + 15 * 60 * 1000;
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    }
+                } else if (user) {
+                    // Credentials login
+                    token.backendToken = (user as any).backendToken;
+                    token.refreshToken = (user as any).refreshToken;
+                    token.id = user.id;
+                    token.role = (user as any).role;
+                    token.expiresAt = Date.now() + 15 * 60 * 1000;
+                }
+                return token;
+            }
+
+            // Check if access token is expired
+            if (Date.now() < (token.expiresAt as number)) {
+                return token;
+            }
+
+            // Access token expired, refresh it
+            return refreshAccessToken(token);
+        },
+
+        async session({ session, token }) {
+            if (session.user) {
+                session.user.id = token.id as string;
+                session.user.role = token.role as string;
+                session.backendToken = token.backendToken as string;
+                session.error = token.error as string;
+            }
+            return session;
+        },
+    },
+
+    events: {
+        async signOut({ token }) {
+            if (token?.refreshToken) {
+                try {
+                    await fetch(`${API_URL}/api/auth/logout`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ refreshToken: token.refreshToken }),
+                    });
+                } catch (e) {
+                    console.error("Failed to call backend logout", e);
+                }
+            }
+        }
+    },
+
+    pages: { signIn: "/login" },
 };
 
 const handler = NextAuth(authOptions);

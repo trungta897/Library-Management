@@ -1,133 +1,69 @@
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { MaterialIcon } from "@/components/base/material-icon";
 import { UI_TEXT } from "@/constants/ui-text";
+import { bookService } from "@/services/book";
+import type { BookListItem } from "@/types/book";
 
-interface BookCardProps {
-  id: number;
-  title: string;
-  author: string;
-  category: string;
-  categoryColor: "science" | "fiction" | "history" | "design";
-  badgeIcon: string;
-  badgeText: string;
-  imageSrc?: string;
-  placeholderIcon?: string;
-  placeholderBg?: string;
-  placeholderIconColor?: string;
-  hideOnMobile?: boolean;
-  hideOnTablet?: boolean;
-}
-
-const CATEGORY_STYLES = {
-  science: "text-secondary-300 bg-secondary-300/10 dark:text-white dark:bg-secondary-300/40",
-  fiction: "text-primary-700 bg-primary-700/10 dark:text-white dark:bg-primary-700/40",
-  history: "text-secondary-300 bg-secondary-300/10 dark:text-white dark:bg-secondary-300/40",
-  design: "text-tertiary-500 bg-tertiary-500/10 dark:text-white dark:bg-tertiary-500/40",
+const CATEGORY_STYLES: Record<string, string> = {
+  "artificial intelligence": "text-secondary-300 bg-secondary-300/10 dark:text-white dark:bg-secondary-300/40",
+  "fiction": "text-primary-700 bg-primary-700/10 dark:text-white dark:bg-primary-700/40",
+  "novel": "text-primary-700 bg-primary-700/10 dark:text-white dark:bg-primary-700/40",
+  "history": "text-secondary-300 bg-secondary-300/10 dark:text-white dark:bg-secondary-300/40",
+  "design": "text-tertiary-500 bg-tertiary-500/10 dark:text-white dark:bg-tertiary-500/40",
+  "science": "text-secondary-300 bg-secondary-300/10 dark:text-white dark:bg-secondary-300/40",
+  "default": "text-primary-700 bg-primary-700/10 dark:text-white dark:bg-primary-700/40",
 };
 
-const BOOKS: BookCardProps[] = [
-  {
-    id: 1,
-    title: "The Algorithmic Mind",
-    author: "Dr. Elena Rostova",
-    category: UI_TEXT.HOME.CATEGORIES.SCIENCE,
-    categoryColor: "science",
-    badgeIcon: "trending_up",
-    badgeText: UI_TEXT.HOME.BADGES.TRENDING_1,
-    imageSrc:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuAYlDKQmIuqCq-tqTicaKu3Yo3_ZJmzdJmUd9f-5laODWr7iO_6xc5MGw7pBqlgzRYgcmDnPSFJdaSQ3MLmMUdLvZApaDzJS-TC6acVDF90OSsK_8LtBKzFL35XNAECxSEWm4HUfIfhYYYxEGYODvnwWmAhjiZO6N81ta8KxdlnyML3EM3wR7ueblXUxAjcmEZ3JSB0PBWmD6t2M3D7scUBUCwuT4qbfHz6BPkcunChaopBdvaWcadTSqOFQ1KeOwkl_PcFdxndQ-vo",
-  },
-  {
-    id: 2,
-    title: "Echoes of Silence",
-    author: "Marcus Thorne",
-    category: UI_TEXT.HOME.CATEGORIES.NOVEL,
-    categoryColor: "fiction",
-    badgeIcon: "star",
-    badgeText: "4.9/5",
-    imageSrc:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuCA0ugb2mtgwGdYen2kuKtDcr1SgH90WiQ4t-vHPzsDIm0zDpqfLep6XfQ9Av8c80v2tgU3rhAirV116cp4WU6vxAaqbvxP-LsurS-EuqR5nwMDP0bi-oalR1xxqoIp915o3WniSMrmFkdIpZviFowlkY21DMtY0dWHCZoMw8-Iwu0CwAaEL7Dy47Wx-SwJalcesh2S3c5KnGe6KXqBDuo31QzsGJyd6YIyNeROWuCYvY5TvzGIBKEjA4lTGx4c13ZZ_i20rbfPxd7m",
-  },
-  {
-    id: 3,
-    title: "A Brief History of Tomorrow",
-    author: "Sarah Jenkins",
-    category: UI_TEXT.HOME.CATEGORIES.HISTORY,
-    categoryColor: "history",
-    placeholderIcon: "history_edu",
-    placeholderBg: "bg-primary-container",
-    placeholderIconColor: "text-on-primary-container",
-    badgeIcon: "",
-    badgeText: "",
-    hideOnMobile: true,
-  },
-  {
-    id: 4,
-    title: "Design Systems",
-    author: "Alex Rivera",
-    category: UI_TEXT.HOME.CATEGORIES.DESIGN,
-    categoryColor: "design",
-    placeholderIcon: "palette",
-    placeholderBg: "bg-tertiary-container",
-    placeholderIconColor: "text-on-tertiary-container",
-    badgeIcon: "",
-    badgeText: "",
-    hideOnMobile: true,
-    hideOnTablet: true,
-  },
-];
-
-function BookCard({
-  id,
-  title,
-  author,
-  category,
-  categoryColor,
-  badgeIcon,
-  badgeText,
-  imageSrc,
-  placeholderIcon,
-  placeholderBg,
-  placeholderIconColor,
-  hideOnMobile,
-  hideOnTablet,
-}: BookCardProps) {
-  let wrapperClass =
-    "bg-surface-container-lowest dark:bg-slate-900 rounded-lg level-1-shadow level-2-shadow-hover transition-all duration-300 overflow-hidden flex flex-col h-full group";
-  if (hideOnTablet) {
-    wrapperClass += " hidden lg:flex";
-  } else if (hideOnMobile) {
-    wrapperClass += " hidden md:flex";
+function getCategoryStyle(category: string): string {
+  const lowerCategory = category.toLowerCase().trim();
+  for (const [key, style] of Object.entries(CATEGORY_STYLES)) {
+    if (lowerCategory.includes(key)) return style;
   }
+  return CATEGORY_STYLES.default;
+}
+
+function BookCard({ book }: { book: BookListItem }) {
+  const wrapperClass =
+    "w-[260px] md:w-[280px] shrink-0 bg-surface-container-lowest dark:bg-slate-900 rounded-lg level-1-shadow level-2-shadow-hover transition-all duration-300 overflow-hidden flex flex-col h-full group snap-start";
+
+  // Lấy category đầu tiên để hiển thị tag
+  const displayCategory = book.category
+    ? book.category.split(",")[0].trim()
+    : "General";
 
   return (
-    <Link href={`/sach/${id}`} className={wrapperClass}>
+    <Link href={`/sach/${book.id}`} className={wrapperClass}>
       {/* Cover Image Area */}
       <div className="relative h-48 w-full overflow-hidden bg-surface-container-low dark:bg-slate-800 p-4 flex items-center justify-center transition-colors duration-200">
-        {imageSrc ? (
+        {book.imageUrl ? (
           <Image
-            src={imageSrc}
-            alt={`Book cover: ${title}`}
+            src={book.imageUrl}
+            alt={`Book cover: ${book.title}`}
             width={128}
             height={192}
             className="h-full w-auto object-cover rounded shadow-sm group-hover:scale-105 transition-transform duration-500"
             unoptimized
           />
         ) : (
-          <div
-            className={`w-24 h-36 ${placeholderBg} rounded shadow-md flex items-center justify-center ${placeholderIconColor} group-hover:scale-105 transition-transform duration-500`}
-          >
-            <MaterialIcon name={placeholderIcon!} className="text-[48px]" />
+          <div className="w-24 h-36 bg-primary-container rounded shadow-md flex items-center justify-center text-on-primary-container group-hover:scale-105 transition-transform duration-500">
+            <MaterialIcon name="menu_book" className="text-[48px]" />
           </div>
         )}
 
-        {/* Badge */}
-        {badgeText && (
+        {/* Rating Badge */}
+        {book.rating > 0 && (
           <div className="absolute top-2 right-2 bg-surface-container-lowest/90 dark:bg-slate-900/90 backdrop-blur-sm px-2 py-1 rounded-full border border-outline-variant/30 dark:border-slate-700 flex items-center shadow-sm">
-            <MaterialIcon name={badgeIcon!} className="text-secondary-500 dark:text-white text-sm mr-1" />
+            <MaterialIcon
+              name="star"
+              className="text-amber-500 dark:text-white text-sm mr-1"
+              style={{ fontVariationSettings: "'FILL' 1" }}
+            />
             <span className="font-mono text-[12px] font-medium leading-[16px] tracking-[0.05em] text-on-surface dark:text-white">
-              {badgeText}
+              {book.rating}/5
             </span>
           </div>
         )}
@@ -136,20 +72,21 @@ function BookCard({
       {/* Card Content */}
       <div className="p-6 flex flex-col flex-grow">
         <h3 className="font-sans text-[20px] font-semibold leading-[28px] text-on-surface dark:text-white mb-1 line-clamp-1 transition-colors duration-200">
-          {title}
+          {book.title}
         </h3>
-        <p className="font-sans text-[14px] leading-[20px] text-on-surface-variant dark:text-white mb-4 transition-colors duration-200">
-          {author}
+        <p className="font-sans text-[14px] leading-[20px] text-on-surface-variant dark:text-white mb-4 transition-colors duration-200 line-clamp-1">
+          {book.author}
         </p>
         <div className="mt-auto flex justify-between items-center">
           <span
-            className={`font-mono text-[12px] font-medium leading-[16px] tracking-[0.05em] ${CATEGORY_STYLES[categoryColor]} px-2 py-1 rounded`}
+            className={`font-mono text-[12px] font-medium leading-[16px] tracking-[0.05em] ${getCategoryStyle(displayCategory)} px-2 py-1 rounded line-clamp-1 max-w-[150px]`}
           >
-            {category}
+            {displayCategory}
           </span>
           <button
-            className="text-primary-700 dark:text-white hover:text-secondary-300 dark:hover:text-secondary-300 transition-colors"
-            aria-label={`Bookmark ${title}`}
+            className="text-primary-700 dark:text-white hover:text-secondary-300 dark:hover:text-secondary-300 transition-colors shrink-0"
+            aria-label={`Bookmark ${book.title}`}
+            onClick={(e) => e.preventDefault()}
           >
             <MaterialIcon name="bookmark_add" />
           </button>
@@ -159,31 +96,110 @@ function BookCard({
   );
 }
 
-export default function PopularBooks() {
+function BookCardSkeleton() {
   return (
-    <section className="py-12 px-4 lg:px-6 max-w-[1440px] mx-auto">
+    <div className="w-[260px] md:w-[280px] shrink-0 bg-surface-container-lowest dark:bg-slate-900 rounded-lg level-1-shadow overflow-hidden flex flex-col h-[380px] animate-pulse snap-start">
+      <div className="h-48 w-full bg-surface-container-low dark:bg-slate-800" />
+      <div className="p-6 flex flex-col flex-grow">
+        <div className="h-6 bg-surface-container-low dark:bg-slate-800 rounded w-3/4 mb-2" />
+        <div className="h-4 bg-surface-container-low dark:bg-slate-800 rounded w-1/2 mb-4" />
+        <div className="mt-auto flex justify-between items-center">
+          <div className="h-5 bg-surface-container-low dark:bg-slate-800 rounded w-20" />
+          <div className="h-5 w-5 bg-surface-container-low dark:bg-slate-800 rounded" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function PopularBooks() {
+  const [books, setBooks] = useState<BookListItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    async function fetchTopRatedBooks() {
+      try {
+        setLoading(true);
+        const data = await bookService.getTopRatedBooks();
+        setBooks(data);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Đã xảy ra lỗi");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchTopRatedBooks();
+  }, []);
+
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const scrollAmount = direction === 'left' ? -320 : 320;
+      scrollContainerRef.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  };
+
+  return (
+    <section className="py-12 px-4 lg:px-6 max-w-[1440px] mx-auto overflow-hidden">
       {/* Section Header */}
       <div className="flex justify-between items-end mb-6">
         <div>
           <h2 className="font-sans text-[32px] font-semibold leading-[40px] tracking-[-0.01em] text-primary-700 dark:text-white transition-colors duration-200">
-            {UI_TEXT.HOME.TRENDING_HEADING}
+            Đang thịnh hành
           </h2>
-          <p className="font-sans text-[16px] leading-[24px] text-on-surface-variant dark:text-white transition-colors duration-200">
-            {UI_TEXT.HOME.TRENDING_SUBHEADING}
+          <p className="font-sans text-[16px] leading-[24px] text-on-surface-variant dark:text-white transition-colors duration-200 mt-1">
+            Xu hướng hiện tại.
           </p>
         </div>
-        <button className="text-secondary-500 dark:text-white font-semibold text-[20px] leading-[28px] hover:text-primary-700 dark:hover:text-primary-300 transition-colors flex items-center">
-          {UI_TEXT.HOME.VIEW_ALL}{" "}
-          <MaterialIcon name="arrow_forward" className="ml-1 text-sm" />
-        </button>
+        <div className="hidden md:flex gap-2">
+          <button 
+            onClick={() => scroll('left')}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low hover:bg-surface-container-high dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors text-on-surface dark:text-white"
+            aria-label="Cuộn trái"
+          >
+            <MaterialIcon name="chevron_left" />
+          </button>
+          <button 
+            onClick={() => scroll('right')}
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-surface-container-low hover:bg-surface-container-high dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors text-on-surface dark:text-white"
+            aria-label="Cuộn phải"
+          >
+            <MaterialIcon name="chevron_right" />
+          </button>
+        </div>
       </div>
 
-      {/* Book Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {BOOKS.map((book) => (
-          <BookCard key={book.title} {...book} />
-        ))}
+      {/* Error State */}
+      {error && (
+        <div className="text-center py-12">
+          <MaterialIcon name="error_outline" className="text-[48px] text-error mb-2" />
+          <p className="text-on-surface-variant dark:text-white">{error}</p>
+        </div>
+      )}
+
+      {/* Book Cards Carousel */}
+      <div className="relative -mx-4 px-4 lg:-mx-6 lg:px-6">
+        <div 
+          ref={scrollContainerRef}
+          className="flex gap-6 overflow-x-auto snap-x snap-mandatory scrollbar-hide pb-6 pt-2"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {loading
+            ? Array.from({ length: 5 }).map((_, i) => <BookCardSkeleton key={i} />)
+            : books.map((book) => (
+                <BookCard key={book.id} book={book} />
+              ))}
+        </div>
       </div>
+      
+      <style dangerouslySetInnerHTML={{__html: `
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+      `}} />
     </section>
   );
 }
+

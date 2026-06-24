@@ -6,7 +6,7 @@ interface BookInfoProps {
 }
 
 export default function BookInfo({ book }: BookInfoProps) {
-  const isAvailable = book.availableCount > 0;
+  const isAvailable = book.availableQuantity > 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -53,10 +53,10 @@ export default function BookInfo({ book }: BookInfoProps) {
 
       {/* Metadata Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4 border-y border-outline-variant/30 dark:border-slate-700">
-        <MetadataItem label="Publisher" value={book.publisher} />
-        <MetadataItem label="Published" value={book.publishedDate} />
-        <MetadataItem label="Pages" value={String(book.pages)} />
-        <MetadataItem label="ISBN" value={book.isbn} />
+        <MetadataItem label="Publisher" value={book.publisher || "N/A"} />
+        <MetadataItem label="Published" value={book.publishYear ? String(book.publishYear) : "N/A"} />
+        <MetadataItem label="Pages" value={book.pages ? String(book.pages) : "N/A"} />
+        <MetadataItem label="ISBN" value={book.isbn || "N/A"} />
       </div>
 
       {/* Tags & Categories */}
@@ -89,3 +89,4 @@ function MetadataItem({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
