@@ -9,30 +9,29 @@ interface BookCoverProps {
 }
 
 export default function BookCover({ book }: BookCoverProps) {
-  const isAvailable = book.availableCount > 0;
+  const isAvailable = book.availableQuantity > 0;
 
   return (
     <div className="flex flex-col gap-2">
       {/* Cover Image */}
       <div className="bg-surface-container-lowest dark:bg-slate-900 rounded-lg shadow-sm border border-outline-variant/20 dark:border-slate-700 overflow-hidden relative transition-colors duration-200">
         <Image
-          src={book.coverImage}
+          src={book.imageUrl || "/placeholder-book.png"}
           alt={`Book Cover: ${book.title}`}
           width={400}
           height={600}
           className="w-full h-auto object-cover aspect-[2/3] rounded-t-sm"
           priority
+          unoptimized
         />
 
-        {/* AI Match Score Badge */}
-        {book.aiMatchScore && (
-          <div className="absolute top-2 right-2 bg-surface-container-lowest/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1 shadow-sm border border-outline-variant/30 dark:border-slate-700">
-            <MaterialIcon name="temp_preferences_custom" className="text-secondary dark:text-white text-[14px]" />
-            <span className="font-label-caps text-label-caps text-secondary dark:text-white font-bold">
-              {book.aiMatchScore}% Match
-            </span>
-          </div>
-        )}
+        {/* Availability Badge */}
+        <div className="absolute top-2 right-2 bg-surface-container-lowest/90 dark:bg-slate-900/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1 shadow-sm border border-outline-variant/30 dark:border-slate-700">
+          <MaterialIcon name={isAvailable ? "check_circle" : "cancel"} className={`text-[14px] ${isAvailable ? "text-secondary" : "text-error"} dark:text-white`} />
+          <span className="font-label-caps text-label-caps text-on-surface dark:text-white font-bold">
+            {book.availableQuantity}/{book.quantity}
+          </span>
+        </div>
       </div>
 
       {/* Action Buttons */}

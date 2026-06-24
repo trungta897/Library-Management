@@ -3,19 +3,28 @@ export interface Book {
   title: string;
   author: string;
   publisher: string;
-  publishedDate: string;
+  publishYear: number;
   pages: number;
   isbn: string;
   description: string;
-  coverImage: string;
+  imageUrl: string;
   rating: number;
   reviewCount: number;
-  availableCount: number;
-  totalCount: number;
+  availableQuantity: number;
+  quantity: number;
   shelfLocation?: string;
   depositPrice?: number;
   categories: string[];
-  aiMatchScore?: number;
+}
+
+export interface BookListItem {
+  id: number;
+  title: string;
+  author: string;
+  category: string;
+  imageUrl: string;
+  rating: number;
+  availableQuantity: number;
 }
 
 export interface RelatedBook {
@@ -24,3 +33,4 @@ export interface RelatedBook {
   author: string;
   coverImage: string;
 }
+
