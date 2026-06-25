@@ -15,14 +15,18 @@ import {
   BookMarked,
 } from "lucide-react";
 import { useAuth } from "@/providers/auth";
+import Image from "next/image";
+import { UI_TEXT } from "@/constants/ui-text";
+
+const { SIDEBAR } = UI_TEXT.ADMIN;
 
 const NAV_ITEMS = [
-  { label: "Tổng quan", icon: LayoutGrid, href: "/admin" },
-  { label: "Kho sách", icon: Library, href: "/admin/kho-sach" },
-  { label: "Lượt mượn", icon: ArrowLeftRight, href: "/admin/luot-muon" },
-  { label: "Thành viên", icon: Users, href: "/admin/thanh-vien" },
-  { label: "Thống kê", icon: LineChart, href: "/admin/thong-ke" },
-  { label: "Cài đặt", icon: Settings, href: "/admin/cai-dat" },
+  { label: SIDEBAR.NAV_OVERVIEW, icon: LayoutGrid, href: "/admin" },
+  { label: SIDEBAR.NAV_BOOKS, icon: Library, href: "/admin/kho-sach" },
+  { label: SIDEBAR.NAV_BORROWS, icon: ArrowLeftRight, href: "/admin/luot-muon" },
+  { label: SIDEBAR.NAV_MEMBERS, icon: Users, href: "/admin/thanh-vien" },
+  { label: SIDEBAR.NAV_STATS, icon: LineChart, href: "/admin/thong-ke" },
+  { label: SIDEBAR.NAV_SETTINGS, icon: Settings, href: "/admin/cai-dat" },
 ];
 
 export default function Sidebar() {
@@ -35,7 +39,7 @@ export default function Sidebar() {
       <div className="flex items-center gap-3 border-b border-white/10 px-6 py-6">
         <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brass-50 to-brass-600 ring-2 ring-white/10 overflow-hidden">
           {user?.image ? (
-            <img src={user.image} alt={user.fullName} className="h-full w-full object-cover" />
+            <Image src={user.image} alt={user.fullName} className="h-full w-full object-cover" />
           ) : (
             <BookMarked size={18} className="text-ink-950" strokeWidth={2.25} />
           )}
@@ -57,18 +61,17 @@ export default function Sidebar() {
         </p>
         <ul className="space-y-1">
           {NAV_ITEMS.map((item) => {
-            const isActive = item.href === "/admin" 
-              ? pathname === "/admin" 
+            const isActive = item.href === "/admin"
+              ? pathname === "/admin"
               : pathname?.startsWith(item.href);
             return (
               <li key={item.label}>
                 <Link
                   href={item.href}
-                  className={`focus-ring group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14.5px] font-medium transition-colors ${
-                    isActive
-                      ? "bg-secondary-300 text-ink-950 shadow-sm"
-                      : "text-white/65 hover:bg-white/[0.06] hover:text-white"
-                  }`}
+                  className={`focus-ring group flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-[14.5px] font-medium transition-colors ${isActive
+                    ? "bg-secondary-300 text-ink-950 shadow-sm"
+                    : "text-white/65 hover:bg-white/[0.06] hover:text-white"
+                    }`}
                 >
                   <item.icon
                     size={18}
@@ -94,7 +97,7 @@ export default function Sidebar() {
             <HelpCircle size={15} />
             Hỗ trợ
           </button>
-          <button 
+          <button
             onClick={() => logout()}
             className="focus-ring flex items-center gap-1.5 rounded-md px-2 py-1.5 hover:text-white/80"
           >
