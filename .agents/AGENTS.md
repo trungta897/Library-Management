@@ -40,3 +40,4 @@ Bạn đang hỗ trợ dự án Library-Management. Trước khi thực hiện b
 - **Xử lí API:** Recommend dùng **Axios** hoặc **Fetch**.
 - **Cấu trúc gọi API:** Cần viết các hàm xử lí request và response dùng chung (reusable wrapper/interceptor) để dễ quản lí và tái sử dụng.
 - **Giao diện (UI):** Để các component đẹp và thống nhất, nên dùng chung 1 thư viện, ưu tiên sử dụng **shadcn/ui**.
+- **Hỗ trợ Dark/Light Mode (Tailwind):** Bất cứ khi nào tạo hoặc chỉnh sửa UI component, LUÔN LUÔN phải định nghĩa đầy đủ class cho cả 2 chế độ (vd: `bg-white dark:bg-slate-900`, `text-ink-950 dark:text-white`, `border-ink-200 dark:border-slate-800`). Tuyệt đối không được để tình trạng chữ trùng màu nền (như chữ trắng trên nền trắng) do quên khai báo màu cho chế độ `dark`.
