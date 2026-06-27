@@ -15,6 +15,7 @@ export interface Book {
   shelfLocation?: string;
   depositPrice?: number;
   categories: { id: number; name: string }[];
+  aiMatchScore?: number;
 }
 
 export interface BookListItem {
