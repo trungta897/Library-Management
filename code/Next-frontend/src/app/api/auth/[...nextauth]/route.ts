@@ -1,20 +1,24 @@
+import axios from "axios";
 import NextAuth, { NextAuthOptions } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
+import GoogleProvider from "next-auth/providers/google";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8081";
 
 async function refreshAccessToken(token: any) {
+    // Không có refreshToken (ví dụ: Google OAuth thuần frontend) → bỏ qua refresh
+    if (!token.refreshToken) {
+        return token;
+    }
+
     try {
-        const res = await fetch(`${API_URL}/api/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refreshToken: token.refreshToken }),
+        const res = await axios.post(`${API_URL}/api/auth/refresh`, {
+            refreshToken: token.refreshToken,
         });
 
-        const data = await res.json();
+        const data = res.data;
 
-        if (!res.ok || !data.success) {
+        if (!data.success) {
             throw new Error(data.message || "Refresh token failed");
         }
 
@@ -43,22 +47,18 @@ const authOptions: NextAuthOptions = {
             name: "Credentials",
             credentials: {
                 email: { label: "Email", type: "email" },
-                password: { label: "Password", type: "password" }
+                password: { label: "Password", type: "password" },
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) return null;
 
                 try {
-                    const res = await fetch(`${API_URL}/api/auth/login`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            email: credentials.email,
-                            password: credentials.password,
-                        }),
+                    const res = await axios.post(`${API_URL}/api/auth/login`, {
+                        email: credentials.email,
+                        password: credentials.password,
                     });
 
-                    const data = await res.json();
+                    const data = res.data;
                     if (data.success && data.data) {
                         return {
                             id: String(data.data.user.id),
@@ -73,8 +73,8 @@ const authOptions: NextAuthOptions = {
                 } catch (e) {
                     return null;
                 }
-            }
-        })
+            },
+        }),
     ],
 
     session: { strategy: "jwt" },
@@ -84,23 +84,29 @@ const authOptions: NextAuthOptions = {
             // Initial sign in
             if (user || (account && profile)) {
                 if (account?.provider === "google") {
-                    // Sync Google Login
+                    // Sync Google Login với backend
                     try {
-                        const res = await fetch(`${API_URL}/api/auth/google`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ email: profile?.email, fullName: profile?.name }),
+                        const res = await axios.post(`${API_URL}/api/auth/google`, {
+                            email: profile?.email,
+                            fullName: profile?.name,
                         });
-                        const data = await res.json();
+                        const data = res.data;
                         if (data.success && data.data) {
                             token.backendToken = data.data.token;
-                            token.refreshToken = data.data.refreshToken;
+                            // Chỉ set refreshToken nếu backend trả về — tránh undefined
+                            token.refreshToken = data.data.refreshToken ?? null;
                             token.id = String(data.data.user.id);
                             token.role = data.data.user.role;
-                            token.expiresAt = Date.now() + 15 * 60 * 1000;
+                            // Nếu có refreshToken thì set expiry, không thì để session tự quản lý
+                            token.expiresAt = token.refreshToken ? Date.now() + 15 * 60 * 1000 : Number.MAX_SAFE_INTEGER;
+                        } else {
+                            // Backend sync thất bại → giữ session Google, không có backend token
+                            token.expiresAt = Number.MAX_SAFE_INTEGER;
                         }
                     } catch (e) {
-                        console.error(e);
+                        console.error("Google backend sync error:", e);
+                        // Không crash session nếu backend offline — giữ Google session
+                        token.expiresAt = Number.MAX_SAFE_INTEGER;
                     }
                 } else if (user) {
                     // Credentials login
@@ -137,16 +143,14 @@ const authOptions: NextAuthOptions = {
         async signOut({ token }) {
             if (token?.refreshToken) {
                 try {
-                    await fetch(`${API_URL}/api/auth/logout`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ refreshToken: token.refreshToken }),
+                    await axios.post(`${API_URL}/api/auth/logout`, {
+                        refreshToken: token.refreshToken,
                     });
                 } catch (e) {
                     console.error("Failed to call backend logout", e);
                 }
             }
-        }
+        },
     },
 
     pages: { signIn: "/login" },
