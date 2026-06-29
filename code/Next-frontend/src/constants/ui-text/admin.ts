@@ -198,3 +198,47 @@ export const ADMIN_USER_MANAGEMENT = {
         CLOSE: "✕",
     },
 };
+
+export const ADMIN_BORROW_MANAGEMENT = {
+    HEADER: {
+        TITLE: "Lượt mượn",
+        DESCRIPTION: "Quản lý danh sách mượn trả sách trong hệ thống",
+        CREATE_BTN: "Tạo phiếu mượn mới",
+    },
+    FILTERS: {
+        SEARCH_PLACEHOLDER: "Tìm theo tên thành viên, SĐT, Mã phiếu...",
+        STATUS_ALL: "Trạng thái",
+        STATUS_PENDING: "Chờ duyệt",
+        STATUS_READY: "Chờ lấy",
+        STATUS_BORROWED: "Đang mượn",
+        STATUS_OVERDUE: "Quá hạn",
+        STATUS_RETURNED: "Đã trả",
+        DATE_SEPARATOR: "—",
+        BTN_MORE_FILTER: "Lọc thêm",
+    },
+    TABLE: {
+        COL_MEMBER: "Thành viên",
+        COL_BOOK: "Sách mượn",
+        COL_BORROW_DATE: "Ngày mượn",
+        COL_DUE_DATE: "Hạn trả",
+        COL_STATUS: "Trạng thái",
+        COL_ACTIONS: "Thao tác",
+        BTN_VIEW: "Xem chi tiết",
+        BTN_RETURN: "Xử lý trả sách",
+        BTN_REMIND: "Gửi nhắc nhở",
+        BTN_CONFIRM_HANDOVER: "Xác nhận giao sách",
+        PAGINATION_INFO: "Hiển thị 1-3 trong số 124 lượt mượn",
+        STATUS_BORROWED: "Đang mượn",
+        STATUS_OVERDUE: "Quá hạn",
+        STATUS_READY: "Chờ lấy",
+        STATUS_RETURNED: "Đã trả",
+        STATUS_PENDING: "Chờ duyệt",
+        NO_DATE: "—",
+    },
+    MODAL: {
+        CREATE_TITLE: "Tạo phiếu mượn mới",
+        BTN_CANCEL: "Hủy",
+        BTN_CREATE: "Tạo phiếu",
+        CLOSE: "✕",
+    },
+};
