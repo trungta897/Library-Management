@@ -62,6 +62,63 @@ public class BookServiceImpl implements BookService {
 
         @Override
         @Transactional
+        public BookResponse createBook(library.dto.request.BookCreateRequest request) {
+                BookEntity book = BookEntity.builder()
+                                .title(request.getTitle())
+                                .isbn(request.getIsbn() != null && request.getIsbn().trim().isEmpty() ? null : request.getIsbn())
+                                .publisher(request.getPublisher())
+                                .publicationDate(request.getPublicationDate())
+                                .pages(request.getPages())
+                                .description(request.getDescription())
+                                .imageUrl(request.getImageUrl())
+                                .shelfLocation(request.getShelfLocation())
+                                .depositPrice(request.getDepositPrice())
+                                .quantity(0)
+                                .availableQuantity(0)
+                                .rating(0.0)
+                                .reviewCount(0)
+                                .build();
+
+                java.util.Set<library.entity.AuthorEntity> authors = new java.util.HashSet<>();
+                if (request.getAuthorIds() != null && !request.getAuthorIds().isEmpty()) {
+                        authors.addAll(authorRepository.findAllById(request.getAuthorIds()));
+                }
+                if (request.getNewAuthors() != null && !request.getNewAuthors().isEmpty()) {
+                        for (String authorName : request.getNewAuthors()) {
+                                java.util.Optional<library.entity.AuthorEntity> existing = authorRepository.findByName(authorName);
+                                if (existing.isPresent()) {
+                                        authors.add(existing.get());
+                                } else {
+                                        library.entity.AuthorEntity newAuthor = library.entity.AuthorEntity.builder().name(authorName).build();
+                                        authors.add(authorRepository.save(newAuthor));
+                                }
+                        }
+                }
+                book.setAuthors(authors);
+
+                java.util.Set<library.entity.CategoryEntity> categories = new java.util.HashSet<>();
+                if (request.getCategoryIds() != null && !request.getCategoryIds().isEmpty()) {
+                        categories.addAll(categoryRepository.findAllById(request.getCategoryIds()));
+                }
+                if (request.getNewCategories() != null && !request.getNewCategories().isEmpty()) {
+                        for (String categoryName : request.getNewCategories()) {
+                                java.util.Optional<library.entity.CategoryEntity> existing = categoryRepository.findByName(categoryName);
+                                if (existing.isPresent()) {
+                                        categories.add(existing.get());
+                                } else {
+                                        library.entity.CategoryEntity newCategory = library.entity.CategoryEntity.builder().name(categoryName).build();
+                                        categories.add(categoryRepository.save(newCategory));
+                                }
+                        }
+                }
+                book.setCategories(categories);
+
+                BookEntity savedBook = bookRepository.save(book);
+                return toBookResponse(savedBook);
+        }
+
+        @Override
+        @Transactional
         public BookResponse updateBook(Integer id, library.dto.request.BookUpdateRequest request) {
                 BookEntity book = bookRepository.findById(id)
                                 .orElseThrow(() -> new CustomBusinessException(
@@ -69,14 +126,44 @@ public class BookServiceImpl implements BookService {
                                                 HttpStatus.NOT_FOUND));
 
                 if (request.getTitle() != null) book.setTitle(request.getTitle());
-                if (request.getAuthorIds() != null) {
-                        java.util.List<library.entity.AuthorEntity> authorEntities = authorRepository.findAllById(request.getAuthorIds());
-                        book.setAuthors(new java.util.HashSet<>(authorEntities));
+                if (request.getAuthorIds() != null || request.getNewAuthors() != null) {
+                        java.util.Set<library.entity.AuthorEntity> authors = new java.util.HashSet<>();
+                        if (request.getAuthorIds() != null) {
+                                authors.addAll(authorRepository.findAllById(request.getAuthorIds()));
+                        }
+                        if (request.getNewAuthors() != null) {
+                                for (String authorName : request.getNewAuthors()) {
+                                        java.util.Optional<library.entity.AuthorEntity> existing = authorRepository.findByName(authorName);
+                                        if (existing.isPresent()) {
+                                                authors.add(existing.get());
+                                        } else {
+                                                library.entity.AuthorEntity newAuthor = library.entity.AuthorEntity.builder().name(authorName).build();
+                                                authors.add(authorRepository.save(newAuthor));
+                                        }
+                                }
+                        }
+                        book.setAuthors(authors);
                 }
-                if (request.getIsbn() != null) book.setIsbn(request.getIsbn());
-                if (request.getCategoryIds() != null) {
-                        java.util.List<library.entity.CategoryEntity> categoryEntities = categoryRepository.findAllById(request.getCategoryIds());
-                        book.setCategories(new java.util.HashSet<>(categoryEntities));
+                if (request.getIsbn() != null) {
+                        book.setIsbn(request.getIsbn().trim().isEmpty() ? null : request.getIsbn());
+                }
+                if (request.getCategoryIds() != null || request.getNewCategories() != null) {
+                        java.util.Set<library.entity.CategoryEntity> categories = new java.util.HashSet<>();
+                        if (request.getCategoryIds() != null) {
+                                categories.addAll(categoryRepository.findAllById(request.getCategoryIds()));
+                        }
+                        if (request.getNewCategories() != null) {
+                                for (String categoryName : request.getNewCategories()) {
+                                        java.util.Optional<library.entity.CategoryEntity> existing = categoryRepository.findByName(categoryName);
+                                        if (existing.isPresent()) {
+                                                categories.add(existing.get());
+                                        } else {
+                                                library.entity.CategoryEntity newCategory = library.entity.CategoryEntity.builder().name(categoryName).build();
+                                                categories.add(categoryRepository.save(newCategory));
+                                        }
+                                }
+                        }
+                        book.setCategories(categories);
                 }
                 if (request.getShelfLocation() != null) book.setShelfLocation(request.getShelfLocation());
                 if (request.getImageUrl() != null) book.setImageUrl(request.getImageUrl());

@@ -19,5 +19,7 @@ public interface BookService {
             int page,
             int size);
 
+    BookResponse createBook(library.dto.request.BookCreateRequest request);
+
     BookResponse updateBook(Integer id, library.dto.request.BookUpdateRequest request);
 }

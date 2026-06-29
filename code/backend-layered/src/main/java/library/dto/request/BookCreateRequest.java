@@ -1,18 +1,23 @@
 package library.dto.request;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class BookUpdateRequest {
+public class BookCreateRequest {
+    @NotBlank(message = "Title is required")
     private String title;
+    
     private List<Integer> authorIds;
     private List<String> newAuthors;
     private String isbn;
@@ -20,6 +25,9 @@ public class BookUpdateRequest {
     private List<String> newCategories;
     private String shelfLocation;
     private String imageUrl;
-    private Integer quantity;
-    private Integer availableQuantity;
+    private String description;
+    private String publisher;
+    private LocalDate publicationDate;
+    private Integer pages;
+    private BigDecimal depositPrice;
 }

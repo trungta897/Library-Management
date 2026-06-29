@@ -5,6 +5,7 @@ import { Plus, Edit2, Trash2, Loader2, Users } from "lucide-react";
 import { authorService } from "@/services/author";
 import type { Author } from "@/types/author";
 import AuthorModal from "./AuthorModal";
+import { ADMIN } from "@/constants/ui-text/admin";
 
 export default function AuthorTable() {
   const [authors, setAuthors] = useState<Author[]>([]);
@@ -41,16 +42,27 @@ export default function AuthorTable() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xoá thể loại này? Các sách thuộc thể loại này sẽ không còn hiển thị thể loại này nữa.")) {
-      return;
-    }
+  const [deleteAuthorId, setDeleteAuthorId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const textUI = ADMIN.MODAL.DELETE_AUTHOR;
+
+  const handleDeleteClick = (id: number) => {
+    setDeleteAuthorId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteAuthorId === null) return;
     
     try {
-      await authorService.deleteAuthor(id);
+      setIsDeleting(true);
+      await authorService.deleteAuthor(deleteAuthorId);
       fetchAuthors();
+      setDeleteAuthorId(null);
     } catch (err: any) {
       alert(err.message || "Lỗi khi xoá tác giả");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -122,7 +134,7 @@ export default function AuthorTable() {
                           <Edit2 size={16} />
                         </button>
                         <button
-                          onClick={() => handleDelete(author.id)}
+                          onClick={() => handleDeleteClick(author.id)}
                           className="p-2 rounded-lg text-error hover:bg-error-50 transition-colors focus-ring"
                           title="Xoá"
                         >
@@ -144,6 +156,39 @@ export default function AuthorTable() {
         author={editingAuthor}
         onSuccess={fetchAuthors}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteAuthorId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/40 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-xl">
+            <div className="p-6">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-error-50 text-error mb-4">
+                <Trash2 size={24} />
+              </div>
+              <h3 className="text-center text-lg font-semibold text-ink-950">{textUI.TITLE}</h3>
+              <p className="mt-2 text-center text-sm text-on-surface-variant">
+                {textUI.DESCRIPTION}
+              </p>
+            </div>
+            <div className="flex items-center justify-end gap-3 bg-surface-container-lowest px-6 py-4 border-t border-surface-container-high">
+              <button
+                onClick={() => setDeleteAuthorId(null)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors"
+                disabled={isDeleting}
+              >
+                {textUI.CANCEL}
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="flex items-center justify-center gap-2 rounded-lg bg-error px-4 py-2 text-sm font-semibold text-white hover:bg-error-600 transition-colors w-[130px]"
+                disabled={isDeleting}
+              >
+                {isDeleting ? <Loader2 size={16} className="animate-spin" /> : textUI.CONFIRM}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

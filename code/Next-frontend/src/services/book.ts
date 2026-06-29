@@ -103,9 +103,7 @@ export const bookService = {
       if (keyword) queryParams.append('keyword', keyword);
       if (category && category !== 'All') queryParams.append('categoryId', category);
 
-      // Note: In real app, this goes to backend (e.g. `http://localhost:8080/api/admin/books`)
-      // Using Next.js rewrites or hardcoded URL depending on env
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8081';
       const response = await fetch(`${baseUrl}/api/admin/books?${queryParams.toString()}`, {
         method: 'GET',
         headers: {
@@ -117,7 +115,6 @@ export const bookService = {
         throw new Error('Không thể lấy danh sách kho sách');
       }
 
-      // Backend trả về trực tiếp đối tượng Page<?>
       const result: import('@/types/book').PageResponse<BookListItem> = await response.json();
       return result;
     } catch (error) {
@@ -131,7 +128,7 @@ export const bookService = {
   // 📖 Cập nhật thông tin sách
   async updateBook(id: number, data: import('@/types/book').BookUpdateRequest): Promise<Book> {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8081';
       const response = await fetch(`${baseUrl}/api/admin/books/${id}`, {
         method: 'PUT',
         headers: {
@@ -146,14 +143,49 @@ export const bookService = {
         throw new Error('Không thể cập nhật sách');
       }
 
-      // Backend trả về thẳng BookResponse hoặc ApiResponse tuỳ cấu trúc
-      // Nếu có field 'id' ngay ở root thì nó là BookResponse
       if ((result as Book).id) {
         return result as Book;
       }
       
       return (result as ApiResponse<Book>).data as Book;
     } catch (error) {
+      if (error instanceof TypeError && error.message === 'Failed to fetch') {
+        throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra backend đang chạy.');
+      }
+      throw error;
+    }
+  },
+
+  // 📖 Tạo sách mới
+  async createBook(data: import('@/types/book').BookCreateRequest): Promise<Book> {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8081';
+      const response = await fetch(`${baseUrl}/api/admin/books`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      let result: any;
+      try {
+        result = await response.json();
+      } catch (e) {
+        throw new Error('Lỗi phản hồi từ máy chủ');
+      }
+
+      if (!response.ok) {
+        const msg = result?.message || result?.error || 'Không thể tạo sách mới (Lỗi máy chủ)';
+        throw new Error(msg);
+      }
+
+      if (result.id) {
+        return result as Book;
+      }
+      
+      return result.data as Book;
+    } catch (error: any) {
       if (error instanceof TypeError && error.message === 'Failed to fetch') {
         throw new Error('Không thể kết nối đến server. Vui lòng kiểm tra backend đang chạy.');
       }

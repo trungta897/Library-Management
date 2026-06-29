@@ -35,11 +35,11 @@ export const bookCopyService = {
     }
   },
 
-  // Thêm mới 1 bản sao
-  async addCopy(bookId: number): Promise<BookCopy> {
+  // Thêm mới nhiều bản sao
+  async addCopy(bookId: number, quantity: number = 1): Promise<BookCopy[]> {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const response = await fetch(`${baseUrl}/api/admin/books/${bookId}/copies`, {
+      const response = await fetch(`${baseUrl}/api/admin/books/${bookId}/copies?quantity=${quantity}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,9 +52,9 @@ export const bookCopyService = {
 
       const result = await response.json();
       if (result.data !== undefined) {
-        return result.data as BookCopy;
+        return result.data as BookCopy[];
       }
-      return result as BookCopy;
+      return result as BookCopy[];
     } catch (error) {
       console.error(error);
       throw error;

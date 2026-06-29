@@ -37,6 +37,62 @@ export const ADMIN = {
         TITLE: "Thống kê",
         DESCRIPTION: "Trang thống kê sẽ chứa biểu đồ và số liệu tại đây.",
     },
+    MODAL: {
+        ADD_BOOK: {
+            TITLE: "Thêm Sách Mới",
+            TITLE_INPUT: "Tiêu đề *",
+            AUTHOR_INPUT: "Tác giả *",
+            ISBN_INPUT: "ISBN",
+            CATEGORY_INPUT: "Thể loại",
+            PUBLISHER_INPUT: "Nhà xuất bản",
+            PUBLICATION_DATE_INPUT: "Ngày xuất bản",
+            PAGES_INPUT: "Số trang",
+            DESCRIPTION_INPUT: "Mô tả sách",
+            SHELF_LOCATION_INPUT: "Vị trí kệ sách",
+            IMAGE_URL_INPUT: "URL Ảnh bìa",
+            DEPOSIT_PRICE_INPUT: "Giá cọc",
+            CANCEL: "Hủy bỏ",
+            SUBMIT: "Thêm sách",
+            SUCCESS: "Thêm sách thành công!",
+            ERROR: "Lỗi khi thêm sách",
+            LOADING: "Đang xử lý...",
+            SELECT_AUTHOR_PLACEHOLDER: "Chọn hoặc nhập tác giả mới...",
+            CREATE_AUTHOR: "Tạo tác giả",
+            NO_AUTHOR_FOUND: "Không tìm thấy tác giả",
+            SELECT_CATEGORY_PLACEHOLDER: "Chọn hoặc nhập thể loại mới...",
+            CREATE_CATEGORY: "Tạo thể loại",
+            NO_CATEGORY_FOUND: "Không tìm thấy thể loại"
+        },
+        EDIT_BOOK: {
+            TITLE: "Chỉnh sửa sách",
+            TITLE_INPUT: "Tiêu đề *",
+            AUTHOR_INPUT: "Tác giả *",
+            ISBN_INPUT: "ISBN",
+            CATEGORY_INPUT: "Thể loại",
+            QUANTITY_TOTAL: "Tổng số lượng",
+            QUANTITY_AUTO_NOTE: "Tự động cập nhật từ danh sách bản sao",
+            QUANTITY_AVAILABLE: "Số lượng có sẵn",
+            SHELF_LOCATION_INPUT: "Vị trí kệ sách",
+            IMAGE_URL_INPUT: "URL Ảnh bìa",
+            CANCEL: "Hủy bỏ",
+            SUBMIT: "Lưu thay đổi",
+            SUCCESS: "Cập nhật sách thành công!",
+            ERROR: "Lỗi khi lưu sách",
+            LOADING: "Đang xử lý...",
+            SELECT_AUTHOR_PLACEHOLDER: "Chọn hoặc nhập tác giả mới...",
+            CREATE_AUTHOR: "Tạo tác giả",
+            NO_AUTHOR_FOUND: "Không tìm thấy tác giả",
+            SELECT_CATEGORY_PLACEHOLDER: "Chọn hoặc nhập thể loại mới...",
+            CREATE_CATEGORY: "Tạo thể loại",
+            NO_CATEGORY_FOUND: "Không tìm thấy thể loại"
+        },
+        DELETE_AUTHOR: {
+            TITLE: "Xác nhận xoá tác giả",
+            DESCRIPTION: "Bạn có chắc chắn muốn xoá tác giả này? Các sách thuộc tác giả này sẽ không còn hiển thị tác giả này nữa. Hành động này không thể hoàn tác.",
+            CANCEL: "Hủy",
+            CONFIRM: "Xóa tác giả"
+        }
+    }
 };
 
 export const ADMIN_LAYOUT = {
