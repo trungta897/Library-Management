@@ -138,7 +138,7 @@ const LoanCard = ({ loan }: { loan: (typeof MOCK_LOANS)[number] }) => {
                             </div>
                         ) : (
                             <Link
-                                href={`/my-books/${loan.id}`}
+                                href={`/lich-su/${loan.id}`}
                                 className="mt-md flex items-center justify-end gap-xs text-body-sm font-medium text-primary hover:underline dark:text-primary-300"
                             >
                                 {loan.status === "returned" ? MY_BOOKS_PAGE.CARD.VIEW_RECEIPT : MY_BOOKS_PAGE.CARD.VIEW_DETAIL}
