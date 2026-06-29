@@ -68,7 +68,7 @@ function StatusBadge({ status, overdayCount }: { status: BorrowStatus; overdayCo
     }
 }
 
-function ActionButtons({ status }: { status: BorrowStatus }) {
+function ActionButtons({ status, onStatusUpdate }: { status: BorrowStatus; onStatusUpdate: (newStatus: BorrowStatus) => void }) {
     return (
         <div className="flex justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
             {/* View detail — available for all */}
@@ -77,7 +77,11 @@ function ActionButtons({ status }: { status: BorrowStatus }) {
             </button>
             {/* Context-specific action */}
             {status === "borrowed" && (
-                <button className="rounded p-1.5 text-primary transition-colors hover:bg-primary-fixed/50" title={T.BTN_RETURN}>
+                <button
+                    onClick={() => onStatusUpdate("returned")}
+                    className="rounded p-1.5 text-primary transition-colors hover:bg-primary-fixed/50"
+                    title={T.BTN_RETURN}
+                >
                     <CheckCircle size={20} />
                 </button>
             )}
@@ -87,7 +91,11 @@ function ActionButtons({ status }: { status: BorrowStatus }) {
                 </button>
             )}
             {status === "ready" && (
-                <button className="rounded p-1.5 text-primary transition-colors hover:bg-primary-fixed/50" title={T.BTN_CONFIRM_HANDOVER}>
+                <button
+                    onClick={() => onStatusUpdate("borrowed")}
+                    className="rounded p-1.5 text-primary transition-colors hover:bg-primary-fixed/50"
+                    title={T.BTN_CONFIRM_HANDOVER}
+                >
                     <PackageCheck size={20} />
                 </button>
             )}
@@ -101,7 +109,7 @@ const AVATAR_COLORS: Record<string, string> = {
     primary: "bg-primary-container/20 text-primary",
 };
 
-export default function BorrowTable({ records }: { records: BorrowRecord[] }) {
+export default function BorrowTable({ records, onStatusUpdate }: { records: BorrowRecord[]; onStatusUpdate?: (id: string, newStatus: BorrowStatus) => void }) {
     return (
         <div className="level-1-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-lowest">
             <div className="overflow-x-auto">
@@ -201,7 +209,7 @@ export default function BorrowTable({ records }: { records: BorrowRecord[] }) {
 
                                 {/* Actions */}
                                 <td className="px-6 py-4 text-right">
-                                    <ActionButtons status={rec.status} />
+                                    <ActionButtons status={rec.status} onStatusUpdate={(s) => onStatusUpdate?.(rec.id, s)} />
                                 </td>
                             </tr>
                         ))}

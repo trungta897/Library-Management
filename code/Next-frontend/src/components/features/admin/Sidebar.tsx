@@ -46,7 +46,7 @@ export default function Sidebar() {
             }`}
         >
             {/* Toggle Button */}
-            <div className={`flex w-full px-md pt-md ${collapsed ? "justify-center px-xs" : "justify-end"}`}>
+            <div className={`flex w-full px-md pt-md ${collapsed ? "justify-center px-xs" : "justify-start"}`}>
                 <button
                     onClick={toggleCollapsed}
                     className="flex h-8 w-8 items-center justify-center rounded-lg text-on-primary/70 transition-colors hover:bg-primary-container/20 hover:text-on-primary"
