@@ -12,6 +12,7 @@ import { useAuth } from "@/providers/auth";
 
 const NAV_LINKS = [
     { href: "/", label: UI_TEXT.PUBLIC_LAYOUT.NAV_LINKS.HOME },
+    { href: "/sach", label: UI_TEXT.PUBLIC_LAYOUT.NAV_LINKS.BOOK },
     { href: "/gioi-thieu", label: UI_TEXT.PUBLIC_LAYOUT.NAV_LINKS.ABOUT },
     { href: "/lien-he", label: UI_TEXT.PUBLIC_LAYOUT.NAV_LINKS.CONTACT },
 ];
@@ -182,7 +183,7 @@ export function PublicHeader() {
                                     type="button"
                                     id="user-avatar-btn"
                                     onClick={() => setIsMenuOpen((value) => !value)}
-                                    className="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-primary-300 transition-all duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:border-primary-600"
+                                    className="dark:border-primary-600 flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-full border-2 border-primary-300 transition-all duration-200 hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
                                     aria-label={UI_TEXT.PUBLIC_LAYOUT.ARIA.USER_MENU}
                                     aria-expanded={isMenuOpen}
                                 >
