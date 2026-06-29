@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import UserFilters from "@/components/features/thanh-vien/UserFilters";
 import UserManagementHeader from "@/components/features/thanh-vien/UserManagementHeader";
 import UserModal from "@/components/features/thanh-vien/UserModal";
 import UserTable from "@/components/features/thanh-vien/UserTable";
+import { UI_TEXT } from "@/constants/ui-text";
 import type { User } from "@/types/user";
 
 //import { useUser } from "@/hooks/useUsers";
@@ -42,6 +44,7 @@ export default function UserManagementPage() {
 
     return (
         <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-lg p-md md:p-xl">
+            <AdminBreadcrumb pageName={UI_TEXT.ADMIN.SIDEBAR.NAV_MEMBERS} />
             <UserManagementHeader onCreate={() => setOpen(true)} />
             <UserFilters />
             <UserTable users={users} />
