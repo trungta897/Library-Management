@@ -215,6 +215,10 @@ export const ADMIN_BORROW_MANAGEMENT = {
         STATUS_RETURNED: "Đã trả",
         DATE_SEPARATOR: "—",
         BTN_MORE_FILTER: "Lọc thêm",
+        BTN_CLEAR_FILTER: "Bỏ lọc",
+        BTN_APPLY_FILTER: "Lọc",
+        LABEL_FROM: "Từ:",
+        LABEL_TO: "Đến:",
     },
     TABLE: {
         COL_MEMBER: "Thành viên",
@@ -240,5 +244,11 @@ export const ADMIN_BORROW_MANAGEMENT = {
         BTN_CANCEL: "Hủy",
         BTN_CREATE: "Tạo phiếu",
         CLOSE: "✕",
+        LABEL_MEMBER_CODE: "Mã thành viên",
+        PLACEHOLDER_MEMBER_CODE: "#MB-...",
+        LABEL_BOOK_TITLE: "Tên sách",
+        PLACEHOLDER_BOOK_TITLE: "Nhập tên sách...",
+        LABEL_DUE_DATE: "Hạn trả (dự kiến)",
+        PLACEHOLDER_DUE_DATE: "dd/mm/yyyy",
     },
 };

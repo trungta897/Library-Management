@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import BorrowFilters from "@/components/features/luot-muon/BorrowFilters";
+import BorrowModal from "@/components/features/luot-muon/BorrowModal";
 import BorrowTable, { type BorrowRecord } from "@/components/features/luot-muon/BorrowTable";
 import { UI_TEXT } from "@/constants/ui-text";
 
@@ -60,7 +61,65 @@ const MOCK_RECORDS: BorrowRecord[] = [
 ];
 
 export default function LuotMuonPage() {
-    const [_open, setOpen] = useState(false);
+    const [openModal, setOpenModal] = useState(false);
+    const [records, setRecords] = useState<BorrowRecord[]>(MOCK_RECORDS);
+    const [search, setSearch] = useState("");
+    const [status, setStatus] = useState("");
+    const [dateFrom, setDateFrom] = useState("");
+    const [dateTo, setDateTo] = useState("");
+
+    const handleStatusUpdate = (id: string, newStatus: string) => {
+        setRecords((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus as any } : r)));
+    };
+
+    const handleCreateRecord = (newRecord: Partial<BorrowRecord>) => {
+        const fullRecord: BorrowRecord = {
+            id: `BW-${String(records.length + 1).padStart(3, "0")}`,
+            ...newRecord,
+        } as BorrowRecord;
+        setRecords([fullRecord, ...records]);
+    };
+
+    const handleApplyDates = (from: string, to: string) => {
+        setDateFrom(from);
+        setDateTo(to);
+    };
+
+    const parseDate = (ddmmyyyy: string | null) => {
+        if (!ddmmyyyy) return null;
+        const parts = ddmmyyyy.split("/");
+        if (parts.length === 3) {
+            return new Date(`${parts[2]}-${parts[1]}-${parts[0]}`);
+        }
+        return null;
+    };
+
+    // Filter records
+    const filteredRecords = records.filter((r) => {
+        const matchSearch =
+            search.trim() === "" ||
+            r.member.name.toLowerCase().includes(search.toLowerCase()) ||
+            r.member.code.toLowerCase().includes(search.toLowerCase()) ||
+            r.book.title.toLowerCase().includes(search.toLowerCase());
+        const matchStatus = status === "" || r.status === status;
+
+        let matchDate = true;
+        const bDate = parseDate(r.borrowDate);
+        if (bDate) {
+            if (dateFrom) {
+                const fromTime = new Date(dateFrom).getTime();
+                if (bDate.getTime() < fromTime) matchDate = false;
+            }
+            if (dateTo) {
+                const toTime = new Date(dateTo).getTime();
+                if (bDate.getTime() > toTime) matchDate = false;
+            }
+        } else if (dateFrom || dateTo) {
+            matchDate = false; // If filtering by date but record has no borrow date
+        }
+
+        return matchSearch && matchStatus && matchDate;
+    });
 
     return (
         <div className="flex min-h-screen flex-col gap-lg p-md md:p-xl">
@@ -72,7 +131,7 @@ export default function LuotMuonPage() {
                     <p className="mt-1 text-body-md text-on-surface-variant">{T.DESCRIPTION}</p>
                 </div>
                 <button
-                    onClick={() => setOpen(true)}
+                    onClick={() => setOpenModal(true)}
                     className="flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 font-medium text-on-primary shadow-md transition-colors hover:bg-primary/90"
                 >
                     <Plus size={20} />
@@ -81,10 +140,13 @@ export default function LuotMuonPage() {
             </div>
 
             {/* Filters */}
-            <BorrowFilters />
+            <BorrowFilters search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} onApplyDates={handleApplyDates} />
 
             {/* Table */}
-            <BorrowTable records={MOCK_RECORDS} />
+            <BorrowTable records={filteredRecords} onStatusUpdate={handleStatusUpdate} />
+
+            {/* Modal */}
+            <BorrowModal open={openModal} onClose={() => setOpenModal(false)} onSubmit={handleCreateRecord} />
         </div>
     );
 }
