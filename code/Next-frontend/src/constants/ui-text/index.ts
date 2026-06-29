@@ -1,4 +1,4 @@
-import { ADMIN, ADMIN_LAYOUT, ADMIN_PAGES, ADMIN_SETTINGS, ADMIN_USER_MANAGEMENT } from "./admin";
+import { ADMIN, ADMIN_BORROW_MANAGEMENT, ADMIN_LAYOUT, ADMIN_PAGES, ADMIN_SETTINGS, ADMIN_USER_MANAGEMENT } from "./admin";
 import { AUTH } from "./auth";
 import { COMMON, MAINTENANCE } from "./common";
 import { NOTIFICATIONS } from "./notifications";
@@ -20,6 +20,7 @@ export const UI_TEXT = {
     ADMIN_PAGES,
     ADMIN_SETTINGS,
     ADMIN_USER_MANAGEMENT,
+    ADMIN_BORROW_MANAGEMENT,
     MAINTENANCE,
     PROFILE,
     SETTINGS_HEADER,
