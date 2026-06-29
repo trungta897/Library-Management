@@ -10,6 +10,8 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE authors SET is_deleted = true WHERE author_id=?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 public class AuthorEntity {
 
     @Id
@@ -22,4 +24,8 @@ public class AuthorEntity {
 
     @Column(name = "biography", columnDefinition = "TEXT")
     private String biography;
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
 }

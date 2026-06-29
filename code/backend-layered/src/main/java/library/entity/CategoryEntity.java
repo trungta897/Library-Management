@@ -22,6 +22,8 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@org.hibernate.annotations.SQLDelete(sql = "UPDATE categories SET is_deleted = true WHERE category_id=?")
+@org.hibernate.annotations.SQLRestriction("is_deleted = false")
 public class CategoryEntity {
 
     @Id
@@ -51,4 +53,8 @@ public class CategoryEntity {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
+
+    @Column(name = "is_deleted", nullable = false)
+    @Builder.Default
+    private boolean isDeleted = false;
 }

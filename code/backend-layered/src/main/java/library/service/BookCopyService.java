@@ -30,23 +30,31 @@ public class BookCopyService {
 
     @Transactional
     public BookCopyResponse addCopy(Integer bookId) {
+        return addCopies(bookId, 1).get(0);
+    }
+
+    @Transactional
+    public List<BookCopyResponse> addCopies(Integer bookId, int quantity) {
         BookEntity book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
 
-        // Generate a unique barcode
-        String barcode = "B" + bookId + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
-        while (bookCopyRepository.existsByBarcode(barcode)) {
-            barcode = "B" + bookId + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+        List<BookCopyEntity> newCopies = new java.util.ArrayList<>();
+        for (int i = 0; i < quantity; i++) {
+            String barcode = "B" + bookId + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            while (bookCopyRepository.existsByBarcode(barcode)) {
+                barcode = "B" + bookId + "-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+            }
+
+            BookCopyEntity copy = BookCopyEntity.builder()
+                    .book(book)
+                    .barcode(barcode)
+                    .status(BookCopyStatus.AVAILABLE)
+                    .build();
+            newCopies.add(copy);
         }
 
-        BookCopyEntity copy = BookCopyEntity.builder()
-                .book(book)
-                .barcode(barcode)
-                .status(BookCopyStatus.AVAILABLE)
-                .build();
-
-        copy = bookCopyRepository.save(copy);
-        return mapToResponse(copy);
+        List<BookCopyEntity> savedCopies = bookCopyRepository.saveAll(newCopies);
+        return savedCopies.stream().map(this::mapToResponse).collect(Collectors.toList());
     }
 
     @Transactional

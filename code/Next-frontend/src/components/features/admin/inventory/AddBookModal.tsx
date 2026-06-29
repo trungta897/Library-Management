@@ -6,20 +6,18 @@ import CreatableSelect from 'react-select/creatable';
 import { bookService } from "@/services/book";
 import { categoryService } from "@/services/category";
 import { authorService } from "@/services/author";
-import type { Book, BookUpdateRequest } from "@/types/book";
+import type { BookCreateRequest } from "@/types/book";
 import type { Category } from "@/types/category";
 import type { Author } from "@/types/author";
 import { ADMIN } from "@/constants/ui-text/admin";
 
-interface EditBookModalProps {
-  bookId: number;
+interface AddBookModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: EditBookModalProps) {
-  const [book, setBook] = useState<Book | null>(null);
+export default function AddBookModal({ isOpen, onClose, onSuccess }: AddBookModalProps) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,24 +27,27 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
   const [selectedAuthors, setSelectedAuthors] = useState<any[]>([]);
   const [isbn, setIsbn] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<any[]>([]);
-
+  
   const [authorInputValue, setAuthorInputValue] = useState("");
   const [categoryInputValue, setCategoryInputValue] = useState("");
-
+  
   const [shelfLocation, setShelfLocation] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-
-  const [quantity, setQuantity] = useState<number>(0);
-  const [availableQuantity, setAvailableQuantity] = useState<number>(0);
+  const [description, setDescription] = useState("");
+  const [publisher, setPublisher] = useState("");
+  const [publicationDate, setPublicationDate] = useState("");
+  const [pages, setPages] = useState<number | "">("");
+  const [depositPrice, setDepositPrice] = useState<number | "">("");
 
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [availableAuthors, setAvailableAuthors] = useState<Author[]>([]);
 
-  const textUI = ADMIN.EDIT_BOOK;
+  const textUI = ADMIN.MODAL.ADD_BOOK;
 
   useEffect(() => {
     const loadData = async () => {
       try {
+        setLoading(true);
         const [catData, authData] = await Promise.all([
           categoryService.getAllCategories(),
           authorService.getAllAuthors()
@@ -55,40 +56,28 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
         setAvailableAuthors(authData);
       } catch (err) {
         console.error("Failed to load reference data:", err);
+        setError("Không thể tải danh sách tác giả hoặc thể loại.");
+      } finally {
+        setLoading(false);
       }
     };
-    loadData();
-  }, []);
-
-  useEffect(() => {
-    if (isOpen && bookId) {
-      fetchBookDetails();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, bookId]);
-
-  const fetchBookDetails = async () => {
-    try {
-      setLoading(true);
+    if (isOpen) {
+      loadData();
+      // Reset form
+      setTitle("");
+      setSelectedAuthors([]);
+      setIsbn("");
+      setSelectedCategories([]);
+      setShelfLocation("");
+      setImageUrl("");
+      setDescription("");
+      setPublisher("");
+      setPublicationDate("");
+      setPages("");
+      setDepositPrice("");
       setError(null);
-      const data = await bookService.getBookById(bookId);
-      setBook(data);
-      
-      setTitle(data.title || "");
-      setSelectedAuthors(data.authors?.map(a => ({ value: a.id.toString(), label: a.name })) || []);
-      setIsbn(data.isbn || "");
-      setSelectedCategories(data.categories?.map(c => ({ value: c.id.toString(), label: c.name })) || []);
-
-      setShelfLocation(data.shelfLocation || "");
-      setImageUrl(data.imageUrl || "");
-      setQuantity(data.quantity || 0);
-      setAvailableQuantity(data.availableQuantity || 0);
-    } catch (err: any) {
-      setError(err.message || "Lỗi khi tải thông tin sách");
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,29 +91,34 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
       const categoryIds = selectedCategories.filter(c => !c.__isNew__).map(c => Number(c.value));
       const newCategories = selectedCategories.filter(c => c.__isNew__).map(c => c.label);
 
-      const updateData: BookUpdateRequest = {
+      const createData: BookCreateRequest = {
         title,
         authorIds,
         newAuthors,
         isbn,
         categoryIds,
         newCategories,
-
         shelfLocation,
         imageUrl,
-        quantity,
-        availableQuantity,
+        description,
+        publisher,
+        publicationDate: publicationDate || undefined,
+        pages: pages === "" ? undefined : Number(pages),
+        depositPrice: depositPrice === "" ? undefined : Number(depositPrice),
       };
 
-      await bookService.updateBook(bookId, updateData);
+      await bookService.createBook(createData);
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err.message || "Lỗi khi lưu sách");
+      setError(err.message || textUI.ERROR);
     } finally {
       setSaving(false);
     }
   };
+
+  const authorOptions = availableAuthors.map(a => ({ value: a.id.toString(), label: a.name }));
+  const categoryOptions = availableCategories.map(c => ({ value: c.id.toString(), label: c.name }));
 
   if (!isOpen) return null;
 
@@ -146,10 +140,6 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
             <div className="flex py-12 flex-col items-center justify-center gap-3 text-outline">
               <Loader2 size={32} className="animate-spin text-primary-500" />
               <p>Đang tải dữ liệu...</p>
-            </div>
-          ) : error && !book ? (
-            <div className="py-12 text-center text-error">
-              <p>{error}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-5">
@@ -175,7 +165,7 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
                   <label className="text-[13px] font-medium text-on-surface-variant">{textUI.AUTHOR_INPUT}</label>
                   <CreatableSelect
                     isMulti
-                    options={availableAuthors.map(a => ({ value: a.id.toString(), label: a.name }))}
+                    options={authorOptions}
                     value={selectedAuthors}
                     inputValue={authorInputValue}
                     onInputChange={(newValue) => setAuthorInputValue(newValue)}
@@ -219,7 +209,7 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
                   <label className="text-[13px] font-medium text-on-surface-variant">{textUI.CATEGORY_INPUT}</label>
                   <CreatableSelect
                     isMulti
-                    options={availableCategories.map(c => ({ value: c.id.toString(), label: c.name }))}
+                    options={categoryOptions}
                     value={selectedCategories}
                     inputValue={categoryInputValue}
                     onInputChange={(newValue) => setCategoryInputValue(newValue)}
@@ -250,23 +240,42 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.QUANTITY_TOTAL}</label>
+                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.PUBLISHER_INPUT}</label>
                   <input 
-                    type="number" 
-                    value={quantity}
-                    disabled
-                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] bg-surface-container-low cursor-not-allowed text-on-surface-variant"
+                    type="text" 
+                    value={publisher}
+                    onChange={(e) => setPublisher(e.target.value)}
+                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
-                  <p className="text-[11px] text-outline">{textUI.QUANTITY_AUTO_NOTE}</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.QUANTITY_AVAILABLE}</label>
+                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.PUBLICATION_DATE_INPUT}</label>
+                  <input 
+                    type="date" 
+                    value={publicationDate}
+                    onChange={(e) => setPublicationDate(e.target.value)}
+                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.PAGES_INPUT}</label>
                   <input 
                     type="number" 
-                    value={availableQuantity}
-                    disabled
-                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] bg-surface-container-low cursor-not-allowed text-on-surface-variant"
+                    value={pages}
+                    onChange={(e) => setPages(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[13px] font-medium text-on-surface-variant">{textUI.DEPOSIT_PRICE_INPUT}</label>
+                  <input 
+                    type="number" 
+                    value={depositPrice}
+                    onChange={(e) => setDepositPrice(e.target.value === "" ? "" : Number(e.target.value))}
+                    className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   />
                 </div>
 
@@ -282,6 +291,15 @@ export default function EditBookModal({ bookId, isOpen, onClose, onSuccess }: Ed
               </div>
 
               <div className="space-y-1.5 border-t border-surface-container-high pt-5 mt-5">
+                <label className="text-[13px] font-medium text-on-surface-variant">{textUI.DESCRIPTION_INPUT}</label>
+                <textarea 
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full rounded-lg border border-surface-container-high px-3 py-2 text-[14px] min-h-[80px] focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+
+              <div className="space-y-1.5">
                 <label className="text-[13px] font-medium text-on-surface-variant">{textUI.IMAGE_URL_INPUT}</label>
                 <input 
                   type="url" 

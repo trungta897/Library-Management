@@ -54,11 +54,32 @@ export interface RelatedBook {
 export interface BookUpdateRequest {
   title?: string;
   authorIds?: number[];
+  newAuthors?: string[];
   isbn?: string;
   categoryIds?: number[];
+  newCategories?: string[];
   shelfLocation?: string;
   imageUrl?: string;
+  description?: string;
+  publisher?: string;
+  publicationDate?: string;
+  pages?: number;
   quantity?: number;
   availableQuantity?: number;
 }
 
+export interface BookCreateRequest {
+  title: string;
+  authorIds?: number[];
+  newAuthors?: string[];
+  isbn?: string;
+  categoryIds?: number[];
+  newCategories?: string[];
+  shelfLocation?: string;
+  imageUrl?: string;
+  description?: string;
+  publisher?: string;
+  publicationDate?: string;
+  pages?: number;
+  depositPrice?: number;
+}

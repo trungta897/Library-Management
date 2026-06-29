@@ -17,6 +17,7 @@ export default function BookCopiesModal({ bookId, bookTitle, isOpen, onClose, on
   const [copies, setCopies] = useState<BookCopy[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [addQuantity, setAddQuantity] = useState<number>(1);
 
   // Status mapping for UI
   const statusMap: Record<BookCopyStatus, { label: string, colorClass: string }> = {
@@ -48,10 +49,12 @@ export default function BookCopiesModal({ bookId, bookTitle, isOpen, onClose, on
   };
 
   const handleAddCopy = async () => {
+    if (addQuantity <= 0) return;
     try {
       setLoading(true);
-      await bookCopyService.addCopy(bookId);
+      await bookCopyService.addCopy(bookId, addQuantity);
       await fetchCopies();
+      setAddQuantity(1);
       onSuccess(); // Triggers table refresh to update quantity
     } catch (err: any) {
       alert(err.message || "Lỗi khi thêm bản sao");
@@ -109,14 +112,24 @@ export default function BookCopiesModal({ bookId, bookTitle, isOpen, onClose, on
           <div className="text-[14px] text-on-surface-variant font-medium">
             Tổng cộng: <span className="text-on-surface font-bold">{copies.length}</span> cuốn
           </div>
-          <button
-            onClick={handleAddCopy}
-            disabled={loading}
-            className="flex items-center gap-2 rounded-lg bg-primary-700 px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-primary-500 disabled:opacity-50 focus-ring"
-          >
-            <Plus size={16} />
-            Thêm 1 cuốn
-          </button>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              min="1"
+              value={addQuantity}
+              onChange={(e) => setAddQuantity(Number(e.target.value))}
+              disabled={loading}
+              className="w-20 rounded-lg border border-surface-container-high px-3 py-2 text-[14px] text-center focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:opacity-50"
+            />
+            <button
+              onClick={handleAddCopy}
+              disabled={loading || addQuantity <= 0}
+              className="flex items-center gap-2 rounded-lg bg-primary-700 px-4 py-2 text-[14px] font-semibold text-white transition-colors hover:bg-primary-500 disabled:opacity-50 focus-ring"
+            >
+              <Plus size={16} />
+              Thêm cuốn
+            </button>
+          </div>
         </div>
 
         {/* List Content */}

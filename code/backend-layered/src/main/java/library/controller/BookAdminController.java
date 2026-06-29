@@ -25,6 +25,13 @@ public class BookAdminController {
         return ResponseEntity.ok(bookPage);
     }
 
+    @PostMapping
+    public ResponseEntity<library.dto.response.BookResponse> createBook(
+            @RequestBody @jakarta.validation.Valid library.dto.request.BookCreateRequest request) {
+        library.dto.response.BookResponse createdBook = bookService.createBook(request);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(createdBook);
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<library.dto.response.BookResponse> updateBook(
             @PathVariable Integer id,

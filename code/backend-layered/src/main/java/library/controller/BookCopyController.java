@@ -22,8 +22,11 @@ public class BookCopyController {
     }
 
     @PostMapping("/{bookId}/copies")
-    public ResponseEntity<BookCopyResponse> addCopy(@PathVariable Integer bookId) {
-        return ResponseEntity.ok(bookCopyService.addCopy(bookId));
+    public ResponseEntity<List<BookCopyResponse>> addCopies(@PathVariable Integer bookId, @RequestParam(defaultValue = "1") int quantity) {
+        if (quantity <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(bookCopyService.addCopies(bookId, quantity));
     }
 
     @PutMapping("/copies/{copyId}")
