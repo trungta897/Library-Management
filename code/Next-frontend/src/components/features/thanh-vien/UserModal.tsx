@@ -82,7 +82,7 @@ export default function UserModal({ open, onClose }: { open: boolean; onClose: (
                                     checked={form.role === "customer"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
                                 />
-                                <div className="flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center transition-all hover:bg-surface-variant peer-checked:border-primary peer-checked:bg-primary-container/10 peer-checked:text-primary">
+                                <div className="flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all hover:bg-surface-variant peer-checked:border-primary peer-checked:bg-primary-container/10 peer-checked:text-primary">
                                     <UserIcon size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.CUSTOMER}</span>
                                 </div>
@@ -98,7 +98,7 @@ export default function UserModal({ open, onClose }: { open: boolean; onClose: (
                                     checked={form.role === "librarian"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
                                 />
-                                <div className="flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center transition-all hover:bg-surface-variant peer-checked:border-primary peer-checked:bg-primary-container/10 peer-checked:text-primary">
+                                <div className="flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all hover:bg-surface-variant peer-checked:border-primary peer-checked:bg-primary-container/10 peer-checked:text-primary">
                                     <BookOpen size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.LIBRARIAN}</span>
                                 </div>
@@ -114,7 +114,7 @@ export default function UserModal({ open, onClose }: { open: boolean; onClose: (
                                     checked={form.role === "admin"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
                                 />
-                                <div className="peer-checked:text-secondary-fixed-variant flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center transition-all hover:bg-surface-variant peer-checked:border-secondary peer-checked:bg-secondary-container/10">
+                                <div className="flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all hover:bg-surface-variant peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary">
                                     <ShieldAlert size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.ADMIN}</span>
                                 </div>
