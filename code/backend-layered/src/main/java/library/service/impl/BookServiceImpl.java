@@ -55,8 +55,10 @@ public class BookServiceImpl implements BookService {
                 Integer categoryId,
                 int page,
                 int size) {
+                // Chuẩn hóa: keyword rỗng → null để query skip LIKE condition
+                String normalizedKeyword = (keyword != null && keyword.trim().isEmpty()) ? null : keyword;
                 org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
-                return bookRepository.findForAdminInventory(keyword, categoryId, pageable)
+                return bookRepository.findForAdminInventory(normalizedKeyword, categoryId, pageable)
                         .map(this::toBookListResponse);
         }
 

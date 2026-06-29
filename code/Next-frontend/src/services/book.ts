@@ -13,7 +13,7 @@ interface ApiResponse<T> {
 const API_URL = "";
 
 export const bookService = {
-    async getBooks(params?: import("@/types/book").BookSearchParams): Promise<import("@/types/book").BookPageResponse> {
+    async getBooks(params?: import("@/types/book").BookSearchParams, signal?: AbortSignal): Promise<import("@/types/book").BookPageResponse> {
         try {
             const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8081";
             
@@ -32,6 +32,7 @@ export const bookService = {
             const response = await fetch(`${baseUrl}/api/admin/books?${queryParams.toString()}`, {
                 method: "GET",
                 headers: { "Content-Type": "application/json" },
+                signal,
             });
 
             const result = await response.json();
