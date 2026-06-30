@@ -4,6 +4,7 @@ import { BORROW } from "./borrow";
 import { COMMON, MAINTENANCE } from "./common";
 import { NOTIFICATIONS } from "./notifications";
 import { ABOUT, BOOK_DETAIL, BOOK_LIST, CONTACT, HOME, PUBLIC_LAYOUT } from "./public";
+import { ROLES } from "./roles";
 import { PROFILE, SETTINGS_HEADER, SETTINGS_NOTIFICATIONS, SETTINGS_SECURITY, SETTINGS_SIDEBAR } from "./settings";
 
 export const UI_TEXT = {
@@ -30,4 +31,5 @@ export const UI_TEXT = {
     SETTINGS_SIDEBAR,
     SETTINGS_NOTIFICATIONS,
     SETTINGS_SECURITY,
+    ROLES,
 };

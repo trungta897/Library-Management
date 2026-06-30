@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Filter, Search, ChevronDown, Check, ShieldAlert, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Check, ChevronDown, Filter, Search, ShieldAlert, X } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text";
 
 type UserFiltersProps = {
@@ -19,7 +19,7 @@ function CustomDropdown({
     onChange,
     options,
     icon: Icon,
-    placeholder
+    placeholder,
 }: {
     value: string;
     onChange: (val: string) => void;
@@ -40,7 +40,7 @@ function CustomDropdown({
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const selectedOption = options.find(opt => opt.value === value);
+    const selectedOption = options.find((opt) => opt.value === value);
 
     return (
         <div className="relative" ref={dropdownRef}>
@@ -48,18 +48,16 @@ function CustomDropdown({
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex h-11 items-center gap-2 rounded-lg border bg-surface-container-low px-4 text-[14px] text-on-surface transition-all hover:bg-surface-variant ${
-                    isOpen ? 'border-primary ring-2 ring-primary/20' : 'border-outline-variant/50'
+                    isOpen ? "border-primary ring-2 ring-primary/20" : "border-outline-variant/50"
                 }`}
             >
                 {Icon && <Icon size={18} className="text-primary" />}
-                <span className="min-w-[120px] text-left font-medium">
-                    {selectedOption ? selectedOption.label : placeholder}
-                </span>
-                <ChevronDown size={16} className={`text-outline transition-transform duration-300 ${isOpen ? 'rotate-180 text-primary' : ''}`} />
+                <span className="min-w-[120px] text-left font-medium">{selectedOption ? selectedOption.label : placeholder}</span>
+                <ChevronDown size={16} className={`text-outline transition-transform duration-300 ${isOpen ? "rotate-180 text-primary" : ""}`} />
             </button>
 
             {isOpen && (
-                <div className="absolute right-0 top-full mt-2 z-50 w-full min-w-[200px] origin-top-right animate-in fade-in zoom-in-95 rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-xl backdrop-blur-xl">
+                <div className="animate-in fade-in zoom-in-95 absolute right-0 top-full z-50 mt-2 w-full min-w-[200px] origin-top-right rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-xl backdrop-blur-xl">
                     <div className="flex flex-col gap-1">
                         {options.map((option) => (
                             <button
@@ -71,8 +69,8 @@ function CustomDropdown({
                                 }}
                                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-[14px] transition-all ${
                                     value === option.value
-                                        ? 'bg-primary-container/30 text-primary font-bold'
-                                        : 'text-on-surface hover:bg-surface-variant hover:text-on-surface-variant'
+                                        ? "bg-primary-container/30 font-bold text-primary"
+                                        : "text-on-surface hover:bg-surface-variant hover:text-on-surface-variant"
                                 }`}
                             >
                                 <span>{option.label}</span>
@@ -86,24 +84,18 @@ function CustomDropdown({
     );
 }
 
-export default function UserFilters({
-    search, onSearchChange,
-    role, onRoleChange,
-    status, onStatusChange,
-    onClearFilters
-}: UserFiltersProps) {
-
+export default function UserFilters({ search, onSearchChange, role, onRoleChange, status, onStatusChange, onClearFilters }: UserFiltersProps) {
     const roleOptions = [
         { value: "", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.ALL },
         { value: "admin", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.ADMIN },
         { value: "librarian", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.LIBRARIAN },
-        { value: "customer", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.CUSTOMER }
+        { value: "customer", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.CUSTOMER },
     ];
 
     const statusOptions = [
         { value: "", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.STATUS.ALL },
         { value: "active", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.STATUS.ACTIVE },
-        { value: "locked", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.STATUS.LOCKED }
+        { value: "locked", label: UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.STATUS.LOCKED },
     ];
 
     return (
@@ -123,27 +115,15 @@ export default function UserFilters({
 
             {/* Filters */}
             <div className="flex w-full flex-wrap items-center gap-md pb-2 md:w-auto md:pb-0">
-                <CustomDropdown 
-                    value={role} 
-                    onChange={onRoleChange} 
-                    options={roleOptions} 
-                    icon={Filter} 
-                    placeholder="Chọn chức vụ" 
-                />
+                <CustomDropdown value={role} onChange={onRoleChange} options={roleOptions} icon={Filter} placeholder="Chọn chức vụ" />
 
-                <CustomDropdown 
-                    value={status} 
-                    onChange={onStatusChange} 
-                    options={statusOptions} 
-                    icon={ShieldAlert} 
-                    placeholder="Chọn trạng thái" 
-                />
+                <CustomDropdown value={status} onChange={onStatusChange} options={statusOptions} icon={ShieldAlert} placeholder="Chọn trạng thái" />
 
                 {/* Clear Filters Button (only shows when active) */}
                 {(search !== "" || role !== "" || status !== "") && (
                     <button
                         onClick={onClearFilters}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/50 bg-surface-container-low text-on-surface-variant transition-all hover:bg-error-container/20 hover:text-error hover:border-error/30 animate-in fade-in zoom-in duration-200"
+                        className="animate-in fade-in zoom-in flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-outline-variant/50 bg-surface-container-low text-on-surface-variant transition-all duration-200 hover:border-error/30 hover:bg-error-container/20 hover:text-error"
                         title="Hủy bộ lọc"
                     >
                         <X size={18} />

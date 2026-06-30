@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
-import UserFilters from "@/components/features/thanh-vien/UserFilters";
-import UserManagementHeader from "@/components/features/thanh-vien/UserManagementHeader";
-import UserModal from "@/components/features/thanh-vien/UserModal";
-import UserTable from "@/components/features/thanh-vien/UserTable";
+import UserFilters from "@/components/features/admin/member/UserFilters";
+import UserManagementHeader from "@/components/features/admin/member/UserManagementHeader";
+import UserModal from "@/components/features/admin/member/UserModal";
+import UserTable from "@/components/features/admin/member/UserTable";
 import { UI_TEXT } from "@/constants/ui-text";
+import { createAdminUser, getAdminUsers, updateAdminUser, updateAdminUserStatus } from "@/services/adminUser";
 import type { User } from "@/types/user";
-import { getAdminUsers, updateAdminUserStatus, updateAdminUser, createAdminUser } from "@/services/adminUser";
 
 export default function UserManagementPage() {
     const [open, setOpen] = useState(false);
@@ -66,7 +66,7 @@ export default function UserManagementPage() {
                 fullName: data.name,
                 email: data.email,
                 role: data.role,
-                password: data.password
+                password: data.password,
             });
         }
         fetchUsers();
@@ -85,14 +85,14 @@ export default function UserManagementPage() {
 
     // Filter logic
     const filteredUsers = users.filter((user) => {
-        const matchesSearch = 
-            user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        const matchesSearch =
+            user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
             user.id.toString().includes(searchQuery);
-            
+
         const matchesRole = roleFilter === "" || user.role === roleFilter;
         const matchesStatus = statusFilter === "" || user.status === statusFilter;
-        
+
         return matchesSearch && matchesRole && matchesStatus;
     });
 
@@ -102,13 +102,15 @@ export default function UserManagementPage() {
                 <AdminBreadcrumb pageName={UI_TEXT.ADMIN.SIDEBAR.NAV_MEMBERS} />
             </div>
 
-            <UserManagementHeader onCreate={() => {
-                setEditUser(null);
-                setOpen(true);
-            }} />
+            <UserManagementHeader
+                onCreate={() => {
+                    setEditUser(null);
+                    setOpen(true);
+                }}
+            />
 
             <main className="flex flex-1 flex-col gap-lg overflow-auto p-8">
-                <UserFilters 
+                <UserFilters
                     search={searchQuery}
                     onSearchChange={setSearchQuery}
                     role={roleFilter}
@@ -122,18 +124,9 @@ export default function UserManagementPage() {
                         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
                     </div>
                 ) : (
-                    <UserTable 
-                        users={filteredUsers} 
-                        onEditUser={handleEditUser}
-                        onToggleStatus={handleToggleStatus}
-                    />
+                    <UserTable users={filteredUsers} onEditUser={handleEditUser} onToggleStatus={handleToggleStatus} />
                 )}
-                <UserModal 
-                    open={open} 
-                    onClose={handleCloseModal} 
-                    initialData={editUser}
-                    onSave={handleSaveUser}
-                />
+                <UserModal open={open} onClose={handleCloseModal} initialData={editUser} onSave={handleSaveUser} />
             </main>
         </div>
     );
