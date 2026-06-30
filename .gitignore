@@ -1,6 +1,26 @@
+# Node / Next.js
+node_modules/
+.next/
+/out/
+/build/
 .env
-node_modules
-package-lock.json
-.husky
-.next
-.env.local
+.env.*
+!.env.example
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Backend (Spring Boot)
+target/
+*.log
+
+# Frontend (Next.js)
+.next/
+out/
+.env
+.env.*
+node_modules/
+next-env.d.ts
+
+.vscode
