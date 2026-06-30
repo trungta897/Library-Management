@@ -15,6 +15,7 @@ export const PUBLIC_LAYOUT = {
         BOOK: "Danh sách sách",
         ABOUT: "Giới thiệu",
         CONTACT: "Liên hệ",
+        MY_BOOKS: "Tủ sách",
     },
     FOOTER_LINKS: {
         TERMS: "Terms of Service",
@@ -213,5 +214,24 @@ export const MY_BOOKS_PAGE = {
         HEADING: "Bạn chưa có lịch sử mượn sách",
         DESC: "Hãy bắt đầu hành trình khám phá kho tri thức khổng lồ của Lumina Library ngay hôm nay.",
         BROWSE_BUTTON: "Duyệt kho sách ngay",
+    },
+};
+
+export const FAVORITE = {
+    TITLE: "Danh sách yêu thích",
+    BREADCRUMB: "Tủ sách",
+    SUBTITLE: "Quản lý những cuốn sách bạn muốn đọc và đang theo dõi.",
+    SEARCH_PLACEHOLDER: "Tìm kiếm trong danh sách...",
+    FILTER: "Lọc",
+    SORT: "Sắp xếp",
+    REMOVE_TITLE: "Xóa khỏi danh sách",
+    AUTHOR_PREFIX: "Tác giả:",
+    MATCH_SUFFIX: "% Match",
+    VIEW_DETAIL: "Xem chi tiết",
+    LOAD_MORE: "Hiển thị thêm",
+    EMPTY_STATE: {
+        HEADING: "Danh sách yêu thích của bạn đang trống",
+        DESC: "Hãy khám phá thư viện và thêm những cuốn sách bạn yêu thích vào danh sách này để dễ dàng theo dõi.",
+        EXPLORE_BTN: "Khám phá ngay",
     },
 };
