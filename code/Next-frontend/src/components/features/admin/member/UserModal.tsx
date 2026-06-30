@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Mail, ShieldAlert, User as UserIcon, X, Lock } from "lucide-react";
+import { BookOpen, Lock, Mail, ShieldAlert, User as UserIcon, X } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text";
 import type { User } from "@/types/user";
 
@@ -88,11 +88,7 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
 
                 {/* Form Body */}
                 <div className="flex flex-col gap-md p-lg">
-                    {error && (
-                        <div className="rounded-lg bg-error-container/20 p-3 text-sm font-medium text-error border border-error/30">
-                            {error}
-                        </div>
-                    )}
+                    {error && <div className="rounded-lg border border-error/30 bg-error-container/20 p-3 text-sm font-medium text-error">{error}</div>}
 
                     <div className="flex flex-col gap-1.5">
                         <label className="font-body-sm text-body-sm font-medium text-on-surface">{UI_TEXT.ADMIN_USER_MANAGEMENT.MODAL.PLACEHOLDER_NAME}</label>
@@ -113,7 +109,7 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                         <div className="relative">
                             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant" size={20} />
                             <input
-                                className={`w-full rounded-lg border border-outline-variant/50 bg-surface-container-low py-2.5 pl-10 pr-4 font-body-md text-body-md text-on-surface transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary ${isEditMode ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                className={`w-full rounded-lg border border-outline-variant/50 bg-surface-container-low py-2.5 pl-10 pr-4 font-body-md text-body-md text-on-surface transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary ${isEditMode ? "cursor-not-allowed opacity-60" : ""}`}
                                 placeholder="e.g. jane@example.com"
                                 value={form.email}
                                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -121,12 +117,14 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                                 disabled={isEditMode}
                             />
                         </div>
-                        {isEditMode && <p className="text-xs text-on-surface-variant mt-1">Không thể thay đổi email sau khi đăng ký.</p>}
+                        {isEditMode && <p className="mt-1 text-xs text-on-surface-variant">{UI_TEXT.ADMIN_USER_MANAGEMENT.MODAL.HINT_EMAIL_EDIT}</p>}
                     </div>
 
                     {!isEditMode && (
                         <div className="flex flex-col gap-1.5">
-                            <label className="font-body-sm text-body-sm font-medium text-on-surface">Mật khẩu khởi tạo</label>
+                            <label className="font-body-sm text-body-sm font-medium text-on-surface">
+                                {UI_TEXT.ADMIN_USER_MANAGEMENT.MODAL.LABEL_PASSWORD}
+                            </label>
                             <div className="relative">
                                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant" size={20} />
                                 <input
@@ -144,7 +142,7 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                         <label className="font-body-sm text-body-sm font-medium text-on-surface">{UI_TEXT.ADMIN_USER_MANAGEMENT.TABLE.COL_ROLE}</label>
                         <div className="grid grid-cols-3 gap-3">
                             {/* Customer Role */}
-                            <label className={initialRole === 'admin' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}>
+                            <label className={initialRole === "admin" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}>
                                 <input
                                     className="peer sr-only"
                                     name="role"
@@ -152,16 +150,18 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                                     value="customer"
                                     checked={form.role === "customer"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                                    disabled={initialRole === 'admin'}
+                                    disabled={initialRole === "admin"}
                                 />
-                                <div className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole === 'admin' ? 'bg-surface-container-low grayscale' : 'hover:bg-surface-variant'}`}>
+                                <div
+                                    className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole === "admin" ? "bg-surface-container-low grayscale" : "hover:bg-surface-variant"}`}
+                                >
                                     <UserIcon size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.CUSTOMER}</span>
                                 </div>
                             </label>
 
                             {/* Librarian Role */}
-                            <label className={initialRole === 'admin' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}>
+                            <label className={initialRole === "admin" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}>
                                 <input
                                     className="peer sr-only"
                                     name="role"
@@ -169,16 +169,18 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                                     value="librarian"
                                     checked={form.role === "librarian"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                                    disabled={initialRole === 'admin'}
+                                    disabled={initialRole === "admin"}
                                 />
-                                <div className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole === 'admin' ? 'bg-surface-container-low grayscale' : 'hover:bg-surface-variant'}`}>
+                                <div
+                                    className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole === "admin" ? "bg-surface-container-low grayscale" : "hover:bg-surface-variant"}`}
+                                >
                                     <BookOpen size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.LIBRARIAN}</span>
                                 </div>
                             </label>
 
                             {/* Admin Role */}
-                            <label className={initialRole !== 'admin' ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}>
+                            <label className={initialRole !== "admin" ? "cursor-not-allowed opacity-60" : "cursor-pointer"}>
                                 <input
                                     className="peer sr-only"
                                     name="role"
@@ -186,16 +188,20 @@ export default function UserModal({ open, onClose, initialData, onSave }: UserMo
                                     value="admin"
                                     checked={form.role === "admin"}
                                     onChange={(e) => setForm({ ...form, role: e.target.value })}
-                                    disabled={initialRole !== 'admin'}
+                                    disabled={initialRole !== "admin"}
                                 />
-                                <div className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole !== 'admin' ? 'bg-surface-container-low grayscale' : 'hover:bg-surface-variant'}`}>
+                                <div
+                                    className={`flex flex-col items-center rounded-lg border border-outline-variant/50 p-3 text-center text-on-surface-variant transition-all peer-checked:border-secondary peer-checked:bg-secondary-container/10 peer-checked:text-secondary ${initialRole !== "admin" ? "bg-surface-container-low grayscale" : "hover:bg-surface-variant"}`}
+                                >
                                     <ShieldAlert size={24} className="mb-1" />
                                     <span className="block font-label-caps text-label-caps">{UI_TEXT.ADMIN_USER_MANAGEMENT.FILTERS.ROLES.ADMIN}</span>
                                 </div>
                             </label>
                         </div>
-                        {initialRole === 'admin' && <p className="text-xs text-on-surface-variant mt-1">Không thể thay đổi vai trò của tài khoản Admin.</p>}
-                        {!isEditMode && <p className="text-xs text-on-surface-variant mt-1">Không thể cấp quyền Admin cho tài khoản mới.</p>}
+                        {initialRole === "admin" && (
+                            <p className="mt-1 text-xs text-on-surface-variant">{UI_TEXT.ADMIN_USER_MANAGEMENT.MODAL.HINT_ROLE_ADMIN_EDIT}</p>
+                        )}
+                        {!isEditMode && <p className="mt-1 text-xs text-on-surface-variant">{UI_TEXT.ADMIN_USER_MANAGEMENT.MODAL.HINT_ROLE_ADMIN_CREATE}</p>}
                     </div>
                 </div>
 
