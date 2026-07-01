@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { BookOpen, Plus, Sparkles } from "lucide-react";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import AddBookModal from "@/components/features/admin/inventory/AddBookModal";
@@ -8,8 +8,25 @@ import BookFilters from "@/components/features/admin/inventory/BookFilters";
 import BookTable from "@/components/features/admin/inventory/BookTable";
 import { ADMIN, ADMIN_PAGES } from "@/constants/ui-text/admin";
 
-export default function KhoSachPage() {
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+export default function KhoSachPage({ searchParams }: { searchParams: { add?: string; ai?: string } }) {
+    const [isAddModalOpen, setIsAddModalOpen] = useState(searchParams?.add === "true");
+    const [initialBookData, setInitialBookData] = useState<any>(undefined);
+
+    useEffect(() => {
+        if (searchParams?.ai === "success") {
+            const storedData = sessionStorage.getItem("smart_cataloging_data");
+            if (storedData) {
+                setInitialBookData(JSON.parse(storedData));
+                sessionStorage.removeItem("smart_cataloging_data");
+            }
+
+            // Remove the query param to avoid re-triggering on refresh
+            window.history.replaceState({}, document.title, window.location.pathname + "?add=true");
+            setTimeout(() => {
+                alert("Đã trích xuất thông tin tự động từ bìa sách thành công!");
+            }, 500);
+        }
+    }, [searchParams?.ai]);
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-surface">
@@ -59,9 +76,14 @@ export default function KhoSachPage() {
             {isAddModalOpen && (
                 <AddBookModal
                     isOpen={isAddModalOpen}
-                    onClose={() => setIsAddModalOpen(false)}
+                    initialData={initialBookData}
+                    onClose={() => {
+                        setIsAddModalOpen(false);
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    }}
                     onSuccess={() => {
-                        window.location.reload();
+                        setIsAddModalOpen(false);
+                        window.location.href = window.location.pathname;
                     }}
                 />
             )}
