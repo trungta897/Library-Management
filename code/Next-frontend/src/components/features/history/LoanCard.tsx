@@ -149,13 +149,13 @@ export const LoanCard = ({ loan, onCancel }: { loan: (typeof MOCK_LOANS)[number]
                                     onClick={onCancel}
                                     className="group mr-4 mt-md flex items-center justify-end gap-xs text-body-sm font-medium text-error decoration-2 dark:text-error-300"
                                 >
-                                    <span className="group-hover:underline">{UI_TEXT.MY_BOOKS_PAGE.CARD.CANCEL_RESERVATION}</span>
+                                    <span className="group-hover:underline">{MY_BOOKS_PAGE.CARD.CANCEL_RESERVATION}</span>
                                 </button>
                                 <Link
                                     href={`/lich-su/${loan.id}`}
                                     className="mt-md rounded-lg bg-primary px-md py-2 font-body-md text-body-sm text-on-primary transition-all hover:opacity-90"
                                 >
-                                    {UI_TEXT.MY_BOOKS_PAGE.CARD.VIEW_DETAIL}
+                                    {MY_BOOKS_PAGE.CARD.VIEW_DETAIL}
                                 </Link>
                             </div>
                         ) : (

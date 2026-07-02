@@ -53,10 +53,10 @@ export default function MyBooksPage() {
                     statusMatch = loan.status === "overdue";
                     break;
                 case MY_BOOKS_PAGE.FILTER.STATUS_PENDING:
-                    statusMatch = loan.status === ("pending" as any);
+                    statusMatch = loan.status === "pending";
                     break;
                 case MY_BOOKS_PAGE.FILTER.STATUS_CANCELLED:
-                    statusMatch = loan.status === ("cancelled" as any);
+                    statusMatch = loan.status === "cancelled";
                     break;
             }
         }
