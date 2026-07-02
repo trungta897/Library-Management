@@ -1,4 +1,20 @@
-export const MOCK_LOANS = [
+export type LoanStatus = "pending" | "borrowing" | "overdue" | "returned" | "cancelled";
+
+export type Loan = {
+    id: string;
+    title: string;
+    author: string;
+    borrowDate: string;
+    dueDate: string;
+    actualReturnDate: string | null;
+    deposit: string;
+    status: LoanStatus;
+    imgSrc: string;
+    lateFee?: string;
+    depositReturn?: string;
+};
+
+export const MOCK_LOANS: Loan[] = [
     {
         id: "RES-9045",
         title: "Sapiens: Lược sử loài người",
@@ -40,6 +56,7 @@ export const MOCK_LOANS = [
         borrowDate: "10/04/2024",
         dueDate: "24/04/2024",
         actualReturnDate: "22/04/2024",
+        deposit: "200.000đ",
         depositReturn: "Đã hoàn (200.000đ)",
         status: "returned" as const,
         imgSrc: "https://lh3.googleusercontent.com/aida-public/AB6AXuCIJL9XO_994a2i10hkM-rzi-XNmAEJDwzK9Itt8Bb9u_NXic5gMtHVrUGHvsnJ8qhtvsgS-ckV5bo_xrY3y1tQXRo0zoRhOxYiAqAKFy1BkUVKCTwC1nyeVMwMHoBhzf1726LJemSi2YoUiDlP6RdWoOnTGoVycfG-xqTAnzrzvBMXVGPe5LfiXQDvdO8b1xW4KMVlXhMMe_Fn2NXRt9LDsYJw6AJl7-h0jUWIAeCAzI3XQ6mre-U8hhDnd7uaSr8-xAKi42Ud534M",
