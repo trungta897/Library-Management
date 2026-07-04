@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MaterialIcon } from "@/components/base/material-icon";
 import BorrowForm from "@/components/features/borrow/BorrowForm";
 import BorrowSuccess from "@/components/features/borrow/BorrowSuccess";
 import LoanSummary from "@/components/features/borrow/LoanSummary";
+import SupportChatWidget from "@/components/features/borrow/SupportChatWidget";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
 import { useBookDetail } from "@/hooks/useBooks";
 import { useAuth } from "@/providers/auth";
+import { createBorrowRequest } from "@/services/borrow";
 
 export default function BorrowPage({ params }: { params: { id: string } }) {
     const router = useRouter();
@@ -21,6 +25,7 @@ export default function BorrowPage({ params }: { params: { id: string } }) {
     const [paymentMethod, setPaymentMethod] = useState<string>("cash");
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [isSuccess, setIsSuccess] = useState<boolean>(false);
+    const [submitError, setSubmitError] = useState<string | null>(null);
 
     // Redirect to login if not authenticated
     useEffect(() => {
@@ -29,23 +34,63 @@ export default function BorrowPage({ params }: { params: { id: string } }) {
         }
     }, [isAuthenticated, router, params.id]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (!pickupDate || !returnDate) {
+            setSubmitError(UI_TEXT.BORROW.FORM.ERRORS.MISSING_DATES);
+            return;
+        }
+
+        if (!book) return;
+
         setIsSubmitting(true);
-        // Simulate API call for now
-        setTimeout(() => {
-            setIsSubmitting(false);
+        setSubmitError(null);
+
+        try {
+            const response = await createBorrowRequest({
+                bookId: book.id,
+                pickupDate,
+                returnDate,
+                paymentMethod: paymentMethod.toUpperCase(),
+            });
+
+            // If VNPay payment URL is returned, redirect to VNPay gateway
+            if (response.data?.paymentUrl) {
+                window.location.href = response.data.paymentUrl;
+                return;
+            }
+
+            // For CASH or other methods, show success page
             setIsSuccess(true);
-        }, 1500);
+        } catch (err: any) {
+            console.error("Lỗi đặt mượn sách:", err);
+            setSubmitError(err.response?.data?.message || err.message || UI_TEXT.BORROW.FORM.ERRORS.SUBMIT_FAILED);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (loading || isAuthenticated === undefined) {
         return (
-            <div className="mx-auto flex w-full max-w-container-max items-center justify-center px-4 py-24 md:px-6">
-                <div className="flex flex-col items-center justify-center space-y-4">
-                    <MaterialIcon name="sync" className="animate-spin text-4xl text-primary-700" />
-                    <p className="text-on-surface-variant">{UI_TEXT.COMMON.LOADING_INFO}</p>
+            <main className="mx-auto w-full max-w-container-max px-6 py-12">
+                <div className="mb-6">
+                    <Skeleton className="mb-4 h-6 w-32" />
+                    <Skeleton className="mb-2 h-10 w-64" />
+                    <Skeleton className="h-5 w-48" />
                 </div>
-            </div>
+                <div className="flex flex-col gap-12 lg:flex-row">
+                    {/* Form Skeleton */}
+                    <div className="flex-1 space-y-8">
+                        <div className="space-y-4">
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-24 w-full" />
+                        </div>
+                    </div>
+                    {/* Summary Skeleton */}
+                    <div className="w-full lg:w-[280px]">
+                        <Skeleton className="h-[400px] w-full rounded-xl" />
+                    </div>
+                </div>
+            </main>
         );
     }
 
@@ -76,8 +121,25 @@ export default function BorrowPage({ params }: { params: { id: string } }) {
     }
 
     return (
-        <main className="mx-auto w-full max-w-container-max px-6 py-12">
-            <div className="flex flex-col gap-12 lg:flex-row">
+        <main className="relative mx-auto flex min-h-screen w-full max-w-container-max flex-col px-6 py-12">
+            <div className="mb-6">
+                <Link href={`/sach/${book.id}`} className="mb-4 flex items-center gap-1 text-primary-700 hover:underline dark:text-primary-300">
+                    <MaterialIcon name="arrow_back" />
+                    <span className="font-title-md text-title-md">{UI_TEXT.BORROW.BACK_TO_CATALOG}</span>
+                </Link>
+                <h1 className="font-display-lg text-display-lg text-primary-700 dark:text-primary-300">{UI_TEXT.BORROW.TITLE}</h1>
+                <p className="mt-2 font-body-md text-on-surface-variant dark:text-slate-300">{UI_TEXT.BORROW.SUBTITLE}</p>
+            </div>
+
+            {submitError && (
+                <div className="mb-6 rounded-lg bg-error-container p-4 text-on-error-container">
+                    <div className="flex items-center gap-2">
+                        <MaterialIcon name="error" />
+                        <span className="font-semibold">{submitError}</span>
+                    </div>
+                </div>
+            )}
+            <div className="grid flex-grow grid-cols-1 gap-12 lg:grid-cols-[1fr_280px]">
                 <BorrowForm
                     book={book}
                     pickupDate={pickupDate}
@@ -89,6 +151,8 @@ export default function BorrowPage({ params }: { params: { id: string } }) {
                 />
                 <LoanSummary userFullName={user.fullName} isSubmitting={isSubmitting} isSuccess={isSuccess} onSubmit={handleSubmit} />
             </div>
+
+            <SupportChatWidget />
         </main>
     );
 }
