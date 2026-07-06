@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useState } from "react";
 import { Edit2, Loader2, Plus, Tags, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,8 +9,6 @@ import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { categoryService } from "@/services/category";
 import type { Category } from "@/types/category";
 import CategoryModal from "./CategoryModal";
-
-("use client");
 
 export default function CategoryTable() {
     const [categories, setCategories] = useState<Category[]>([]);

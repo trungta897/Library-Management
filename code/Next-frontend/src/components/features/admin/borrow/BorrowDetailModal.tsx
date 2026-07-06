@@ -1,11 +1,10 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Book, Calendar, DollarSign, User, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { AdminBorrowOrderDetailResponse, getAdminBorrowOrderDetail } from "@/services/adminBorrow";
-
-("use client");
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.DETAIL_MODAL;
 

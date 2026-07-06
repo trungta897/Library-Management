@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Book, ChevronLeft, ChevronRight, Library, MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -11,8 +12,6 @@ import { bookService } from "@/services/book";
 import type { BookListItem, PageResponse } from "@/types/book";
 import BookCopiesModal from "./BookCopiesModal";
 import EditBookModal from "./EditBookModal";
-
-("use client");
 
 const textUI = ADMIN_INVENTORY_MANAGEMENT;
 

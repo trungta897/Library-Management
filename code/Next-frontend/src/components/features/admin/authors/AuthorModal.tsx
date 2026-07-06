@@ -1,11 +1,10 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Loader2, Save, X } from "lucide-react";
 import { ADMIN_AUTHOR_MANAGEMENT } from "@/constants/ui-text/admin";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { authorService } from "@/services/author";
 import type { Author, AuthorRequest } from "@/types/author";
-
-("use client");
 
 interface AuthorModalProps {
     author: Author | null;

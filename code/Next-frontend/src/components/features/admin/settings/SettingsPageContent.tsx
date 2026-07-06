@@ -1,3 +1,4 @@
+"use client";
 import type { ElementType, ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
@@ -21,8 +22,6 @@ import { SuccessModal } from "@/components/base/success-modal";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import { UI_TEXT } from "@/constants/ui-text";
 import { ADMIN_UI } from "@/constants/ui-text/admin";
-
-("use client");
 
 const SETTINGS = UI_TEXT.ADMIN_SETTINGS;
 const STORAGE_KEY = "lumina_admin_business_policies";

@@ -1,11 +1,10 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Loader2, Save, X } from "lucide-react";
 import { ADMIN_UI } from "@/constants/ui-text/admin";
 import { ADMIN_CATEGORY_MANAGEMENT } from "@/constants/ui-text/admin";
 import { categoryService } from "@/services/category";
 import type { Category, CategoryRequest } from "@/types/category";
-
-("use client");
 
 interface CategoryModalProps {
     category: Category | null;

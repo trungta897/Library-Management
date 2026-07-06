@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
@@ -9,8 +10,6 @@ import { UI_TEXT } from "@/constants/ui-text";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { createAdminUser, getAdminUsers, updateAdminUser, updateAdminUserStatus } from "@/services/adminUser";
 import type { User } from "@/types/user";
-
-("use client");
 
 export default function UserManagementPage() {
     const [open, setOpen] = useState(false);

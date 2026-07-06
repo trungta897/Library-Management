@@ -1,3 +1,4 @@
+"use client";
 import { type ElementType, type ReactNode, useState } from "react";
 import {
     Bot,
@@ -19,8 +20,6 @@ import {
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import { UI_TEXT } from "@/constants/ui-text";
 import { AUDIT_MOCK } from "@/constants/ui-text/admin";
-
-("use client");
 
 const TEXT = UI_TEXT.ADMIN_AUDIT_LOGS;
 const TOTAL_RECORDS = 1000;

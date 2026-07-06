@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, BarChart3, CheckCircle2, ClipboardList, LibraryBig, ShoppingBasket, Users } from "lucide-react";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
@@ -8,8 +9,6 @@ import { type DashboardStats, adminDashboardService } from "@/services/adminDash
 import type { AnalyticsData, MonthRangeSelection } from "@/types/admin-analytics";
 import { MonthRangeControls, buildTrendData, formatMonthPickerValue, normalizeMonthRange } from "./AnalyticsMonthControls";
 import { AiInsights, BorrowingTrend, LibraryStatus, MostBorrowedBooks, RecentActivities, StatCard, TopCategories } from "./AnalyticsSections";
-
-("use client");
 
 const ACTIVITY_COLORS = ["border-blue-500", "border-green-500", "border-red-500", "border-yellow-500", "border-purple-500"];
 

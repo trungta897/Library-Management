@@ -1,10 +1,9 @@
+"use client";
 import { useEffect, useState } from "react";
 import { CheckCircle, ChevronLeft, ChevronRight, Eye, Mail, PackageCheck, X } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
 import { ADMIN_UI } from "@/constants/ui-text/admin";
-
-("use client");
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE;
 
