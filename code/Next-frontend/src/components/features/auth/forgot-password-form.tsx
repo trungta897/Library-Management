@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BaseButton } from "@/components/base/base-button";
