@@ -9,7 +9,8 @@ import BorrowFilters from "@/components/features/admin/borrow/BorrowFilters";
 import BorrowModal from "@/components/features/admin/borrow/BorrowModal";
 import BorrowTable, { type BorrowRecord } from "@/components/features/admin/borrow/BorrowTable";
 import { UI_TEXT } from "@/constants/ui-text";
-import { getAdminBorrowOrders, updateAdminBorrowStatus } from "@/services/adminBorrow";
+import { API_ERRORS } from "@/constants/ui-text/shared/api";
+import { getAdminBorrowOrders, processRenewal, updateAdminBorrowStatus } from "@/services/adminBorrow";
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.HEADER;
 
@@ -58,6 +59,7 @@ export default function LuotMuonPage() {
                         dueDate: formatDate(order.dueDate),
                         status: statusValue,
                         overdayCount: order.overdayCount ?? undefined,
+                        isGuest: order.isGuest,
                     };
                 });
                 setRecords(mappedData);
@@ -68,7 +70,7 @@ export default function LuotMuonPage() {
                 await new Promise((resolve) => setTimeout(resolve, 5000 - elapsed));
             }
             console.error("Error fetching borrow orders:", error);
-            setError(error.message || "Lỗi khi tải dữ liệu lượt mượn");
+            setError(error.message || API_ERRORS.FETCH_BORROW_ERROR);
         } finally {
             setIsLoading(false);
         }
@@ -86,7 +88,18 @@ export default function LuotMuonPage() {
             setRecords((prev) => prev.map((r) => (r.id === id ? { ...r, status: newStatus as any } : r)));
         } catch (error) {
             console.error("Lỗi khi cập nhật trạng thái:", error);
-            toast.error("Cập nhật trạng thái thất bại. Vui lòng thử lại!");
+            toast.error(API_ERRORS.UPDATE_STATUS_FAILED);
+        }
+    };
+
+    const handleRenewal = async (id: string, approved: boolean) => {
+        try {
+            await processRenewal(id, approved);
+            // Refresh records to get updated dates and statuses
+            fetchBorrows();
+        } catch (error) {
+            console.error("Lỗi khi duyệt gia hạn:", error);
+            alert(API_ERRORS.RENEW_APPROVE_FAILED);
         }
     };
 
@@ -165,7 +178,14 @@ export default function LuotMuonPage() {
                 <BorrowFilters search={search} onSearchChange={setSearch} status={status} onStatusChange={setStatus} onApplyDates={handleApplyDates} />
 
                 {/* Table */}
-                <BorrowTable records={filteredRecords} onStatusUpdate={handleStatusUpdate} onViewDetail={handleViewDetail} loading={isLoading} error={error} />
+                <BorrowTable
+                    records={filteredRecords}
+                    onStatusUpdate={handleStatusUpdate}
+                    onViewDetail={handleViewDetail}
+                    onRenewalUpdate={handleRenewal}
+                    loading={isLoading}
+                    error={error}
+                />
 
                 <BorrowModal open={openModal} onClose={() => setOpenModal(false)} onSubmitSuccess={fetchBorrows} />
                 <BorrowDetailModal isOpen={detailModalOpen} onClose={() => setDetailModalOpen(false)} orderCode={selectedOrderId} />

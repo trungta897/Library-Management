@@ -1,4 +1,5 @@
 import axiosInstance from "@/lib/axios";
+import { BorrowHistoryResponseDto, BorrowOrderDetailResponseDto } from "@/types/borrow";
 
 export interface BorrowRequestPayload {
     bookId: number;
@@ -28,5 +29,36 @@ interface ApiResponse<T> {
 
 export const createBorrowRequest = async (payload: BorrowRequestPayload): Promise<ApiResponse<BorrowResponse>> => {
     const response = await axiosInstance.post<ApiResponse<BorrowResponse>>("/api/user/borrow", payload);
+    return response.data;
+};
+
+export const getBorrowHistory = async (): Promise<ApiResponse<BorrowHistoryResponseDto[]>> => {
+    const response = await axiosInstance.get<ApiResponse<BorrowHistoryResponseDto[]>>("/api/user/borrow/history");
+    return response.data;
+};
+
+export const getBorrowOrderDetail = async (orderCode: string): Promise<ApiResponse<BorrowOrderDetailResponseDto>> => {
+    const response = await axiosInstance.get<ApiResponse<BorrowOrderDetailResponseDto>>(`/api/user/borrow/history/${orderCode}`);
+    return response.data;
+};
+
+export const renewBorrowOrder = async (orderId: string, durationInDays: number): Promise<ApiResponse<BorrowResponse>> => {
+    const response = await axiosInstance.post<ApiResponse<BorrowResponse>>(`/api/user/borrow/${orderId}/renew`, { durationInDays });
+    return response.data;
+};
+
+export interface GuestBorrowRequestPayload extends BorrowRequestPayload {
+    fullName: string;
+    phone: string;
+    email?: string;
+}
+
+export const createGuestBorrowRequest = async (payload: GuestBorrowRequestPayload): Promise<ApiResponse<BorrowResponse>> => {
+    const response = await axiosInstance.post<ApiResponse<BorrowResponse>>("/api/public/borrow/guest", payload);
+    return response.data;
+};
+
+export const getGuestBorrowOrderDetail = async (orderCode: string, phone: string): Promise<ApiResponse<BorrowOrderDetailResponseDto>> => {
+    const response = await axiosInstance.get<ApiResponse<BorrowOrderDetailResponseDto>>(`/api/public/borrow/lookup?orderCode=${orderCode}&phone=${phone}`);
     return response.data;
 };
