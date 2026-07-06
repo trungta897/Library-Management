@@ -10,6 +10,7 @@ import { BaseInput } from "@/components/base/base-input";
 import { AppleIcon } from "@/components/icons/apple-icon";
 import { GoogleIcon } from "@/components/icons/google-icon";
 import { UI_TEXT } from "@/constants/ui-text";
+import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { useAuth } from "@/providers/auth";
 import { isAdminRole } from "@/utils/role";
 
@@ -17,8 +18,7 @@ export function LoginForm() {
     const { login, loginWithGoogle } = useAuth();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const isRegistered = searchParams.get("registered") === "true";
-
+    const isRegistered = searchParams?.get("registered") === "true";
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
@@ -30,7 +30,7 @@ export function LoginForm() {
     useEffect(() => {
         const error = searchParams?.get("error");
         if (error) {
-            setLockedError("Đăng nhập Google thất bại. Tài khoản của bạn có thể đã bị khóa.");
+            setLockedError(API_ERRORS.GOOGLE_LOGIN_FAILED);
             // clean up url without reloading page
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
@@ -63,13 +63,10 @@ export function LoginForm() {
             } else {
                 router.replace("/");
             }
-        } catch (error: any) {
-            const errorMsg = error.message || UI_TEXT.AUTH.LOGIN.ERROR_MSG;
-            if (errorMsg.toLowerCase().includes("khóa")) {
-                setLockedError(errorMsg);
-            } else {
-                setErrors({ email: errorMsg });
-            }
+        } catch (error) {
+            setErrors({
+                email: error instanceof Error ? error.message : UI_TEXT.AUTH.LOGIN.ERROR_MSG,
+            });
         } finally {
             setIsLoading(false);
         }
@@ -120,8 +117,8 @@ export function LoginForm() {
             </div>
 
             {isRegistered && (
-                <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-                    <span>✅</span>
+                <div className="mb-6 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                    <span>{UI_TEXT.AUTH.LOGIN.SUCCESS_ICON}</span>
                     <span>{UI_TEXT.AUTH.LOGIN.REGISTER_SUCCESS}</span>
                 </div>
             )}

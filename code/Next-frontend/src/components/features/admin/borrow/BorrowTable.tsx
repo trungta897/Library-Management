@@ -1,12 +1,13 @@
 "use client";
-
-import { CheckCircle, ChevronLeft, ChevronRight, Eye, Mail, PackageCheck } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle, ChevronLeft, ChevronRight, Eye, Mail, PackageCheck, X } from "lucide-react";
 import { TableSkeleton } from "@/components/ui/table-skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
+import { ADMIN_UI } from "@/constants/ui-text/admin";
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE;
 
-export type BorrowStatus = "borrowed" | "overdue" | "ready" | "returned" | "pending";
+export type BorrowStatus = "borrowed" | "overdue" | "ready" | "returned" | "pending" | "pending_renewal";
 
 export type BorrowRecord = {
     id: string;
@@ -26,6 +27,7 @@ export type BorrowRecord = {
     dueDate: string | null;
     status: BorrowStatus;
     overdayCount?: number;
+    isGuest?: boolean;
 };
 
 function StatusBadge({ status, overdayCount }: { status: BorrowStatus; overdayCount?: number }) {
@@ -66,6 +68,15 @@ function StatusBadge({ status, overdayCount }: { status: BorrowStatus; overdayCo
                     {T.STATUS_PENDING}
                 </span>
             );
+        case "pending_renewal":
+            return (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200/50 bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                    {T.STATUS_PENDING_RENEWAL || ADMIN_UI.BORROW.PENDING_RENEWAL}
+                </span>
+            );
+        default:
+            return null;
     }
 }
 
@@ -74,11 +85,13 @@ function ActionButtons({
     status,
     onStatusUpdate,
     onViewDetail,
+    onRenewalUpdate,
 }: {
     id: string;
     status: BorrowStatus;
     onStatusUpdate: (newStatus: BorrowStatus) => void;
     onViewDetail?: (id: string) => void;
+    onRenewalUpdate?: (id: string, approved: boolean) => void;
 }) {
     return (
         <div className="flex justify-end gap-1 transition-opacity">
@@ -123,6 +136,24 @@ function ActionButtons({
                     <PackageCheck size={20} />
                 </button>
             )}
+            {status === "pending_renewal" && (
+                <>
+                    <button
+                        onClick={() => onRenewalUpdate?.(id, true)}
+                        className="text-success hover:bg-success-container/50 rounded p-1.5 transition-colors"
+                        title="Duyệt gia hạn"
+                    >
+                        <CheckCircle size={20} />
+                    </button>
+                    <button
+                        onClick={() => onRenewalUpdate?.(id, false)}
+                        className="rounded p-1.5 text-error transition-colors hover:bg-error-container/50"
+                        title="Từ chối gia hạn"
+                    >
+                        <X size={20} />
+                    </button>
+                </>
+            )}
         </div>
     );
 }
@@ -137,15 +168,27 @@ export default function BorrowTable({
     records,
     onStatusUpdate,
     onViewDetail,
+    onRenewalUpdate,
     loading,
     error,
 }: {
     records: BorrowRecord[];
     onStatusUpdate?: (id: string, newStatus: BorrowStatus) => void;
     onViewDetail?: (id: string) => void;
+    onRenewalUpdate?: (id: string, approved: boolean) => void;
     loading?: boolean;
     error?: string | null;
 }) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 8;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [records]);
+
+    const totalPages = Math.max(1, Math.ceil(records.length / ITEMS_PER_PAGE));
+    const paginatedRecords = records.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
     return (
         <div className="level-1-shadow flex flex-1 flex-col overflow-hidden rounded-xl border border-outline-variant/30 bg-surface-container-lowest">
             <div className="overflow-x-auto">
@@ -172,7 +215,7 @@ export default function BorrowTable({
                                     <p>{error}</p>
                                 </td>
                             </tr>
-                        ) : records.length === 0 ? (
+                        ) : paginatedRecords.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-6 py-12 text-center text-outline-variant">
                                     <div className="flex flex-col items-center justify-center gap-2">
@@ -182,7 +225,7 @@ export default function BorrowTable({
                                 </td>
                             </tr>
                         ) : (
-                            records.map((rec) => (
+                            paginatedRecords.map((rec) => (
                                 <tr key={rec.id} className="group transition-colors hover:bg-surface-container-low/50">
                                     {/* Member */}
                                     <td className="px-6 py-4">
@@ -204,7 +247,14 @@ export default function BorrowTable({
                                                 </div>
                                             )}
                                             <div>
-                                                <p className="font-medium text-on-background">{rec.member.name}</p>
+                                                <div className="flex items-center gap-2">
+                                                    <p className="font-medium text-on-background">{rec.member.name}</p>
+                                                    {rec.isGuest && (
+                                                        <span className="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                                                            {T.GUEST_BADGE}
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <p className="font-label-caps text-xs text-on-surface-variant">{rec.member.code}</p>
                                             </div>
                                         </div>
@@ -265,14 +315,16 @@ export default function BorrowTable({
                                         <StatusBadge status={rec.status} overdayCount={rec.overdayCount} />
                                     </td>
 
-                                    {/* Actions */}
-                                    <td className="px-6 py-4 text-right">
-                                        <ActionButtons
-                                            id={rec.id}
-                                            status={rec.status}
-                                            onStatusUpdate={(s) => onStatusUpdate?.(rec.id, s)}
-                                            onViewDetail={onViewDetail}
-                                        />
+                                    <td className="px-6 py-4">
+                                        <div className="flex justify-end">
+                                            <ActionButtons
+                                                id={rec.id}
+                                                status={rec.status}
+                                                onStatusUpdate={(newStatus) => onStatusUpdate?.(rec.id, newStatus)}
+                                                onViewDetail={onViewDetail}
+                                                onRenewalUpdate={onRenewalUpdate}
+                                            />
+                                        </div>
                                     </td>
                                 </tr>
                             ))
@@ -282,28 +334,29 @@ export default function BorrowTable({
             </div>
 
             {/* Pagination */}
-            <div className="mt-auto flex items-center justify-between border-t border-outline-variant/30 bg-surface-container-lowest px-6 py-4">
-                <p className="font-body-sm text-body-sm text-on-surface-variant">{T.PAGINATION_INFO}</p>
-                <div className="flex items-center gap-1">
-                    <button
-                        disabled
-                        className="rounded p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        <ChevronLeft size={20} />
-                    </button>
-                    <button className="flex h-8 w-8 items-center justify-center rounded bg-primary text-sm font-medium text-on-primary">1</button>
-                    <button className="flex h-8 w-8 items-center justify-center rounded text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low">
-                        2
-                    </button>
-                    <button className="flex h-8 w-8 items-center justify-center rounded text-sm font-medium text-on-surface transition-colors hover:bg-surface-container-low">
-                        3
-                    </button>
-                    <span className="px-1 text-on-surface-variant">...</span>
-                    <button className="rounded p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low">
-                        <ChevronRight size={20} />
-                    </button>
+            {totalPages > 1 && (
+                <div className="mt-auto flex items-center justify-between border-t border-outline-variant/30 bg-surface-container-lowest px-6 py-4">
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                        {UI_TEXT.ADMIN_BORROW_MANAGEMENT.FILTERS.PAGINATION_PAGE} {currentPage} / {totalPages}
+                    </p>
+                    <div className="flex items-center gap-1">
+                        <button
+                            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={currentPage === 1}
+                            className="rounded p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <button
+                            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                            disabled={currentPage === totalPages}
+                            className="rounded p-1.5 text-on-surface-variant transition-colors hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -1,12 +1,13 @@
 "use client";
-
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import UserFilters from "@/components/features/admin/member/UserFilters";
 import UserManagementHeader from "@/components/features/admin/member/UserManagementHeader";
 import UserModal from "@/components/features/admin/member/UserModal";
 import UserTable from "@/components/features/admin/member/UserTable";
 import { UI_TEXT } from "@/constants/ui-text";
+import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { createAdminUser, getAdminUsers, updateAdminUser, updateAdminUserStatus } from "@/services/adminUser";
 import type { User } from "@/types/user";
 
@@ -46,7 +47,7 @@ export default function UserManagementPage() {
             fetchUsers();
         } catch (error) {
             console.error("Failed to update status:", error);
-            alert("Cập nhật trạng thái thất bại. Vui lòng thử lại!");
+            toast.error(API_ERRORS.UPDATE_STATUS_FAILED);
         }
     };
 

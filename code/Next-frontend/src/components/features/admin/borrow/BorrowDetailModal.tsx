@@ -1,9 +1,9 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import { Book, Calendar, DollarSign, User, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
+import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { AdminBorrowOrderDetailResponse, getAdminBorrowOrderDetail } from "@/services/adminBorrow";
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.DETAIL_MODAL;
@@ -49,7 +49,7 @@ export default function BorrowDetailModal({ isOpen, onClose, orderCode }: Borrow
             if (elapsed < 5000) {
                 await new Promise((resolve) => setTimeout(resolve, 5000 - elapsed));
             }
-            setError("Đã có lỗi xảy ra khi tải chi tiết");
+            setError(API_ERRORS.FETCH_BORROW_DETAIL_ERROR);
         } finally {
             setIsLoading(false);
         }
@@ -134,10 +134,15 @@ export default function BorrowDetailModal({ isOpen, onClose, orderCode }: Borrow
                                         {T.SECTION_MEMBER}
                                     </div>
                                     <div className="space-y-2 text-sm">
-                                        <p>
+                                        <div className="flex items-center gap-2">
                                             <span className="text-on-surface-variant">{T.MEMBER_NAME}</span>{" "}
                                             <span className="font-medium">{detail.customerName}</span>
-                                        </p>
+                                            {detail.isGuest && (
+                                                <span className="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold text-primary-700 dark:bg-primary-900 dark:text-primary-300">
+                                                    {T.GUEST_BADGE}
+                                                </span>
+                                            )}
+                                        </div>
                                         <p>
                                             <span className="text-on-surface-variant">{T.MEMBER_CODE}</span> <span>{detail.customerCode}</span>
                                         </p>

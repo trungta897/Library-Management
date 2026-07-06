@@ -1,32 +1,208 @@
-﻿"use client";
+"use client";
 
-import { useState } from "react";
-import { Bot, CalendarDays, ChevronDown, ChevronLeft, ChevronRight, Download, Eye, MoreVertical, SearchCheck, User, Zap } from "lucide-react";
+import { type ElementType, type ReactNode, useEffect, useState } from "react";
+import {
+    Bot,
+    CalendarDays,
+    CheckCircle2,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Eye,
+    MoreVertical,
+    SearchCheck,
+    ShieldX,
+    User,
+    XCircle,
+    Zap,
+} from "lucide-react";
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import { UI_TEXT } from "@/constants/ui-text";
-import { CURRENT_TIME, auditLogs, timeRangeHours } from "@/mocks/adminAuditLogs";
-import type { ActorFilter, AuditLog, ExportFormat, TimeRangeFilter } from "@/types/admin-audit-log";
-import { type BrowserSavePicker, createExportBlob, createExportContent, exportFileConfig } from "@/utils/adminAuditExport";
-import { ActorBadge, DetailItem, FilterControl, ResultBadge, SelectControl } from "./AuditLogControls";
+import { systemLogService } from "@/services/systemLog";
 
 const TEXT = UI_TEXT.ADMIN_AUDIT_LOGS;
-const TOTAL_RECORDS = 1000;
 const PAGE_SIZE = 10;
-const TOTAL_PAGES = TOTAL_RECORDS / PAGE_SIZE;
 
-function getPaginationItems(currentPage: number) {
-    const pages = new Set([1, 2, TOTAL_PAGES - 1, TOTAL_PAGES, currentPage - 1, currentPage, currentPage + 1]);
+type AuditResult = "success" | "failed" | "blocked";
+type TimeRangeFilter = "12h" | "1d" | "3d" | "7d" | "all";
+type ActorFilter = "all" | "user" | "admin" | "automation";
+type ExportFormat = "csv" | "json";
+type BrowserWritableFile = {
+    write: (data: Blob) => Promise<void>;
+    close: () => Promise<void>;
+};
+type BrowserFileHandle = {
+    createWritable: () => Promise<BrowserWritableFile>;
+};
+type BrowserSavePicker = {
+    showSaveFilePicker?: (options: {
+        suggestedName: string;
+        types: Array<{
+            description: string;
+            accept: Record<string, string[]>;
+        }>;
+    }) => Promise<BrowserFileHandle>;
+};
+
+type AuditLog = {
+    id: string;
+    timestamp: string;
+    occurredAt: Date;
+    actor: string;
+    actorFilter: Exclude<ActorFilter, "all"> | "unknown";
+    initials?: string;
+    actorTone: "primary" | "secondary" | "system" | "muted";
+    actorIcon?: ElementType;
+    action: string;
+    targetObject: string;
+    ipAddress: string;
+    result: AuditResult;
+    description: string;
+};
+
+const CURRENT_TIME = new Date("2026-06-29T15:30:00+07:00");
+const timeRangeHours: Record<Exclude<TimeRangeFilter, "all">, number> = {
+    "12h": 12,
+    "1d": 24,
+    "3d": 72,
+    "7d": 168,
+};
+const exportFileConfig: Record<ExportFormat, { extension: string; mimeType: string; description: string }> = {
+    csv: {
+        extension: "csv",
+        mimeType: "text/csv;charset=utf-8",
+        description: "CSV",
+    },
+    json: {
+        extension: "json",
+        mimeType: "application/json;charset=utf-8",
+        description: "JSON",
+    },
+};
+
+// createDate removed
+
+function formatDateTime(date: Date) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+    const seconds = String(date.getSeconds()).padStart(2, "0");
+
+    return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+}
+
+// audit logs fetched dynamically
+
+const actorToneClasses: Record<AuditLog["actorTone"], string> = {
+    primary: "bg-primary-container text-on-primary-container",
+    secondary: "bg-secondary-container text-on-secondary-container",
+    system: "bg-surface-variant text-on-surface-variant",
+    muted: "bg-outline-variant text-on-surface-variant",
+};
+
+const resultConfig: Record<
+    AuditResult,
+    {
+        label: string;
+        icon: ElementType;
+        classes: string;
+    }
+> = {
+    success: {
+        label: TEXT.RESULT.SUCCESS,
+        icon: CheckCircle2,
+        classes: "bg-success-50 text-success-700",
+    },
+    failed: {
+        label: TEXT.RESULT.FAILED,
+        icon: XCircle,
+        classes: "bg-error-50 text-error-700",
+    },
+    blocked: {
+        label: TEXT.RESULT.BLOCKED,
+        icon: ShieldX,
+        classes: "bg-warning-100 text-warning-800",
+    },
+};
+
+function FilterControl({ label, icon: Icon, children }: { label: string; icon: ElementType; children: ReactNode }) {
+    return (
+        <label className="flex min-w-[220px] flex-1 flex-col gap-xs">
+            <span className="font-label-caps text-label-caps text-on-surface-variant">{label}</span>
+            <span className="relative">
+                <Icon size={17} strokeWidth={1.9} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-outline" />
+                {children}
+            </span>
+        </label>
+    );
+}
+
+function SelectControl({ value, onChange, children }: { value: string; onChange: (value: string) => void; children: ReactNode }) {
+    return (
+        <>
+            <select
+                value={value}
+                onChange={(event) => onChange(event.target.value)}
+                className="h-11 w-full appearance-none rounded border-none bg-surface px-10 text-body-md text-on-surface outline-none transition-shadow focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary"
+            >
+                {children}
+            </select>
+            <ChevronDown size={18} strokeWidth={1.9} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-outline" />
+        </>
+    );
+}
+
+function ActorBadge({ log }: { log: AuditLog }) {
+    const Icon = log.actorIcon;
+
+    return (
+        <div className="flex min-w-0 items-center gap-sm">
+            <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full font-mono text-[10px] ${actorToneClasses[log.actorTone]}`}>
+                {Icon ? <Icon size={14} strokeWidth={1.8} /> : log.initials}
+            </span>
+            <span className={`truncate font-medium ${log.actorTone === "muted" ? "text-outline" : "text-on-surface"}`}>{log.actor}</span>
+        </div>
+    );
+}
+
+function ResultBadge({ result }: { result: AuditResult }) {
+    const config = resultConfig[result];
+    const Icon = config.icon;
+
+    return (
+        <span className={`inline-flex items-center gap-xs whitespace-nowrap rounded-full px-3 py-1 font-label-caps text-[11px] ${config.classes}`}>
+            <Icon size={14} strokeWidth={2} />
+            {config.label}
+        </span>
+    );
+}
+
+function DetailItem({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex flex-col gap-xs">
+            <dt className="font-label-caps text-label-caps text-on-surface-variant">{label}</dt>
+            <dd className="text-body-sm font-medium text-on-surface">{value}</dd>
+        </div>
+    );
+}
+
+function getPaginationItems(currentPage: number, totalPages: number) {
+    if (totalPages === 0) return [];
+    const pages = new Set([1, 2, totalPages - 1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
 
     if (currentPage <= 3) {
         pages.add(3);
     }
 
-    if (currentPage >= TOTAL_PAGES - 2) {
-        pages.add(TOTAL_PAGES - 2);
+    if (currentPage >= totalPages - 2) {
+        pages.add(totalPages - 2);
     }
 
     const sortedPages = Array.from(pages)
-        .filter((page) => page >= 1 && page <= TOTAL_PAGES)
+        .filter((page) => page >= 1 && page <= totalPages)
         .sort((first, second) => first - second);
 
     return sortedPages.reduce<Array<number | "ellipsis">>((items, page) => {
@@ -39,7 +215,55 @@ function getPaginationItems(currentPage: number) {
     }, []);
 }
 
-export default function AuditLogsPage() {
+function toExportRecord(log: AuditLog) {
+    return {
+        [TEXT.DETAIL.TIMESTAMP]: log.timestamp,
+        [TEXT.DETAIL.ACTOR]: log.actor,
+        [TEXT.DETAIL.ACTION]: log.action,
+        [TEXT.DETAIL.TARGET]: log.targetObject,
+        [TEXT.DETAIL.IP_ADDRESS]: log.ipAddress,
+        [TEXT.DETAIL.RESULT]: resultConfig[log.result].label,
+        [TEXT.DETAIL.DESCRIPTION]: log.description,
+    };
+}
+
+function escapeCsvValue(value: string) {
+    return `"${value.replace(/"/g, '""')}"`;
+}
+
+function createExportContent(logs: AuditLog[], format: ExportFormat) {
+    if (logs.length === 0) {
+        return TEXT.TABLE.EMPTY_PAGE;
+    }
+
+    if (format === "json") {
+        return JSON.stringify(logs.map(toExportRecord), null, 2);
+    }
+
+    const headers = [
+        TEXT.DETAIL.TIMESTAMP,
+        TEXT.DETAIL.ACTOR,
+        TEXT.DETAIL.ACTION,
+        TEXT.DETAIL.TARGET,
+        TEXT.DETAIL.IP_ADDRESS,
+        TEXT.DETAIL.RESULT,
+        TEXT.DETAIL.DESCRIPTION,
+    ];
+    const rows = logs.map((log) => {
+        const record = toExportRecord(log);
+        return headers.map((header) => escapeCsvValue(record[header])).join(",");
+    });
+
+    return [headers.map(escapeCsvValue).join(","), ...rows].join("\r\n");
+}
+
+function createExportBlob(content: string, format: ExportFormat, mimeType: string) {
+    const output = format === "csv" ? `\uFEFF${content}` : content;
+
+    return new Blob([output], { type: mimeType });
+}
+
+export default function AuditLogsPageContent() {
     const [openMenuId, setOpenMenuId] = useState<string | null>(null);
     const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
     const [currentPage, setCurrentPage] = useState(1);
@@ -48,7 +272,35 @@ export default function AuditLogsPage() {
     const [actionFilter, setActionFilter] = useState("all");
     const [searchKeyword, setSearchKeyword] = useState("");
     const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
-    const paginationItems = getPaginationItems(currentPage);
+
+    const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const data = await systemLogService.getSystemLogs(0, 1000);
+                const mapped: AuditLog[] = data.content.map((log: any) => ({
+                    id: String(log.id),
+                    timestamp: formatDateTime(new Date(log.createdAt)),
+                    occurredAt: new Date(log.createdAt),
+                    actor: log.userFullName ? `${log.userFullName} (${log.userEmail})` : TEXT.SYSTEM_LOGS.GUEST,
+                    actorFilter: log.userFullName ? "user" : "unknown",
+                    initials: log.userFullName ? log.userFullName.substring(0, 2).toUpperCase() : "SYS",
+                    actorTone: log.userFullName ? "secondary" : "muted",
+                    action: log.action,
+                    targetObject: log.details.length > 50 ? log.details.substring(0, 50) + "..." : log.details,
+                    ipAddress: log.ipAddress || "N/A",
+                    result: log.status ? (log.status.toLowerCase() as AuditResult) : "success",
+                    description: log.details,
+                }));
+                setAuditLogs(mapped);
+            } catch (err) {
+                console.error(err);
+            }
+        };
+        fetchLogs();
+    }, []);
+
     const actionOptions = Array.from(new Set(auditLogs.map((log) => log.action)));
     const normalizedSearchKeyword = searchKeyword.trim().toLowerCase();
     const filteredLogs = auditLogs.filter((log) => {
@@ -62,12 +314,21 @@ export default function AuditLogsPage() {
 
         return isInTimeRange && isInActorFilter && isInActionFilter && isInSearch;
     });
-    const visibleLogs = currentPage === 1 ? filteredLogs.slice(0, PAGE_SIZE) : [];
-    const paginationStart = currentPage === 1 ? 1 : (currentPage - 1) * PAGE_SIZE;
-    const paginationEnd = currentPage * PAGE_SIZE;
+
+    const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
+    const paginationItems = getPaginationItems(currentPage, totalPages);
+
+    // Ensure currentPage is valid after filtering
+    if (currentPage > totalPages && totalPages > 0) {
+        setCurrentPage(totalPages);
+    }
+
+    const visibleLogs = filteredLogs.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const paginationStart = filteredLogs.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+    const paginationEnd = Math.min(currentPage * PAGE_SIZE, filteredLogs.length);
     const paginationSummary = TEXT.TABLE.PAGINATION_SUMMARY.replace("{start}", String(paginationStart))
         .replace("{end}", String(paginationEnd))
-        .replace("{total}", String(TOTAL_RECORDS));
+        .replace("{total}", String(filteredLogs.length));
     const handleExportRecords = async () => {
         const exportConfig = exportFileConfig[exportFormat];
         const content = createExportContent(filteredLogs, exportFormat);
@@ -91,6 +352,11 @@ export default function AuditLogsPage() {
                 const writableFile = await fileHandle.createWritable();
                 await writableFile.write(blob);
                 await writableFile.close();
+                try {
+                    await systemLogService.logExportEvent(exportFormat);
+                } catch (e) {
+                    console.error("Failed to log export event", e);
+                }
                 return;
             } catch (error) {
                 if (error instanceof DOMException && error.name === "AbortError") {
@@ -108,6 +374,11 @@ export default function AuditLogsPage() {
         link.click();
         link.remove();
         URL.revokeObjectURL(downloadUrl);
+        try {
+            await systemLogService.logExportEvent(exportFormat);
+        } catch (e) {
+            console.error("Failed to log export event", e);
+        }
     };
 
     return (
@@ -234,7 +505,7 @@ export default function AuditLogsPage() {
                             <DetailItem label={TEXT.DETAIL.ACTION} value={selectedLog.action} />
                             <DetailItem label={TEXT.DETAIL.TARGET} value={selectedLog.targetObject} />
                             <DetailItem label={TEXT.DETAIL.IP_ADDRESS} value={selectedLog.ipAddress} />
-                            <DetailItem label={TEXT.DETAIL.RESULT} value={TEXT.RESULT[selectedLog.result.toUpperCase() as "SUCCESS" | "FAILED" | "BLOCKED"]} />
+                            <DetailItem label={TEXT.DETAIL.RESULT} value={resultConfig[selectedLog.result].label} />
                             <div className="md:col-span-2 xl:col-span-3">
                                 <DetailItem label={TEXT.DETAIL.DESCRIPTION} value={selectedLog.description} />
                             </div>
@@ -367,8 +638,8 @@ export default function AuditLogsPage() {
                             <button
                                 type="button"
                                 aria-label={TEXT.TABLE.NEXT_PAGE}
-                                disabled={currentPage === TOTAL_PAGES}
-                                onClick={() => setCurrentPage((page) => Math.min(TOTAL_PAGES, page + 1))}
+                                disabled={currentPage === totalPages}
+                                onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                                 className="grid h-8 w-8 place-items-center rounded text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
                             >
                                 <ChevronRight size={18} strokeWidth={1.9} />

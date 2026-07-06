@@ -1,12 +1,20 @@
-import { ADMIN, ADMIN_AUDIT_LOGS, ADMIN_BORROW_MANAGEMENT, ADMIN_LAYOUT, ADMIN_PAGES, ADMIN_SETTINGS, ADMIN_USER_MANAGEMENT } from "./admin";
+import {
+    ADMIN,
+    ADMIN_ANALYTICS,
+    ADMIN_AUDIT_LOGS,
+    ADMIN_BORROW_MANAGEMENT,
+    ADMIN_LAYOUT,
+    ADMIN_PAGES,
+    ADMIN_REVIEWS,
+    ADMIN_SETTINGS,
+    ADMIN_USER_MANAGEMENT,
+    ROLES,
+} from "./admin";
 import { AUTH } from "./auth";
-import { BORROW } from "./borrow";
 import { COMMON, MAINTENANCE } from "./common";
-import { NOTIFICATIONS } from "./notifications";
-import { ABOUT, BOOK_DETAIL, BOOK_LIST, CONTACT, HOME, PUBLIC_LAYOUT } from "./public";
 import { REPORT_REASONS } from "./report";
 import { REVIEW } from "./review";
-import { ROLES } from "./roles";
+import { ABOUT, BOOK_DETAIL, BOOK_LIST, BOOK_VISIT, BORROW, CONTACT, FAVORITE, HOME, MY_BOOKS_PAGE, NOTIFICATIONS, PUBLIC_LAYOUT, RENEW_PAGE } from "./public";
 import { PROFILE, SETTINGS_HEADER, SETTINGS_NOTIFICATIONS, SETTINGS_SECURITY, SETTINGS_SIDEBAR } from "./settings";
 
 export const UI_TEXT = {
@@ -17,9 +25,13 @@ export const UI_TEXT = {
     PUBLIC_LAYOUT,
     BOOK_LIST,
     BOOK_DETAIL,
+    BOOK_VISIT,
     HOME,
     ABOUT,
     CONTACT,
+    FAVORITE,
+    MY_BOOKS_PAGE,
+    RENEW_PAGE,
     BORROW,
     ADMIN_LAYOUT,
     ADMIN_PAGES,
@@ -27,6 +39,8 @@ export const UI_TEXT = {
     ADMIN_AUDIT_LOGS,
     ADMIN_USER_MANAGEMENT,
     ADMIN_BORROW_MANAGEMENT,
+    ADMIN_ANALYTICS,
+    ADMIN_REVIEWS,
     MAINTENANCE,
     PROFILE,
     SETTINGS_HEADER,
