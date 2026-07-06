@@ -7,6 +7,7 @@ import library.dto.response.BookResponse;
 import library.entity.BookEntity;
 import library.repository.BookRepository;
 import library.service.BookService;
+import library.service.SystemLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final library.repository.CategoryRepository categoryRepository;
     private final library.repository.AuthorRepository authorRepository;
+    private final SystemLogService systemLogService;
 
     @Override
     public List<BookListResponse> getAllBooks() {
@@ -119,6 +121,7 @@ public class BookServiceImpl implements BookService {
         book.setCategories(categories);
 
         BookEntity savedBook = bookRepository.save(book);
+        systemLogService.logAction("Thêm sách mới", "Admin đã thêm sách mới: " + savedBook.getTitle());
         return toBookResponse(savedBook);
     }
 
@@ -173,36 +176,34 @@ public class BookServiceImpl implements BookService {
         if (request.getShelfLocation() != null) book.setShelfLocation(request.getShelfLocation());
         if (request.getImageUrl() != null) book.setImageUrl(request.getImageUrl());
 
-
         bookRepository.save(book);
+        systemLogService.logAction("Cập nhật sách", "Admin đã cập nhật thông tin sách: " + book.getTitle());
         return toBookResponse(book);
     }
 
     @Override
     @SuppressWarnings("null")
-    public BookPageResponse getBooks(String keyword, String category, int page, int size, String sortBy) {
+    public BookPageResponse getBooks(String keyword, Integer categoryId, Integer authorId, String publisher, int page, int size, String sortBy, Double minRating, Boolean isAvailable) {
         Sort sort = resolveSort(sortBy);
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<BookEntity> bookPage;
+        String kw = (keyword != null && !keyword.trim().isEmpty()) ? keyword.trim() : null;
+        String pub = (publisher != null && !publisher.trim().isEmpty()) ? publisher.trim() : null;
 
-        boolean hasKeyword = keyword != null && !keyword.trim().isEmpty();
-        boolean hasCategory = category != null && !category.trim().isEmpty();
+        Page<BookEntity> bookPage = bookRepository.findWithFilters(kw, categoryId, authorId, pub, minRating, isAvailable, pageable);
 
-        String kw = hasKeyword ? keyword.trim() : "";
-        String cat = hasCategory ? category.trim() : "";
+        List<BookResponse> responses = bookPage.getContent().stream()
+                .map(this::toBookResponse)
+                .collect(Collectors.toList());
 
-        if (hasKeyword && hasCategory) {
-            bookPage = bookRepository.searchByKeywordAndCategory(kw, cat, pageable);
-        } else if (hasKeyword) {
-            bookPage = bookRepository.searchByKeyword(kw, pageable);
-        } else if (hasCategory) {
-            bookPage = bookRepository.findByCategory(cat, pageable);
-        } else {
-            bookPage = bookRepository.findAll(pageable);
-        }
-
-        return toPageResponse(bookPage);
+        return new BookPageResponse(
+                responses,
+                bookPage.getNumber(),
+                bookPage.getSize(),
+                bookPage.getTotalElements(),
+                bookPage.getTotalPages(),
+                bookPage.isLast()
+        );
     }
 
     @Override
@@ -227,14 +228,19 @@ public class BookServiceImpl implements BookService {
 
     private Sort resolveSort(String sortBy) {
         if (sortBy == null) {
-            return Sort.by(Sort.Direction.DESC, "createdAt");
+            return Sort.by(Sort.Direction.DESC, "id");
         }
 
         return switch (sortBy) {
-            case "newest" -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "newest" -> Sort.by(Sort.Direction.DESC, "id");
+            case "oldest" -> Sort.by(Sort.Direction.ASC, "id");
             case "title" -> Sort.by(Sort.Direction.ASC, "title");
+            case "titleDesc" -> Sort.by(Sort.Direction.DESC, "title");
             case "author" -> Sort.by(Sort.Direction.ASC, "author");
-            default -> Sort.by(Sort.Direction.DESC, "createdAt");
+            case "authorDesc" -> Sort.by(Sort.Direction.DESC, "author");
+            case "mostRead" -> Sort.by(Sort.Direction.DESC, "borrowCount");
+            case "leastRead" -> Sort.by(Sort.Direction.ASC, "borrowCount");
+            default -> Sort.by(Sort.Direction.DESC, "id");
         };
     }
 

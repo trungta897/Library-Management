@@ -6,6 +6,8 @@ import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "borrow_orders")
@@ -32,6 +34,9 @@ public class BorrowOrderEntity extends BaseEntity {
     @Column(name = "due_date")
     private LocalDate dueDate;
 
+    @Column(name = "actual_return_date")
+    private LocalDate actualReturnDate;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
     @Builder.Default
@@ -51,5 +56,9 @@ public class BorrowOrderEntity extends BaseEntity {
 
     @Column(name = "total_deposit", precision = 10, scale = 2)
     private BigDecimal totalDeposit;
+
+    @OneToMany(mappedBy = "borrowOrder", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<BorrowOrderDetailEntity> orderDetails = new ArrayList<>();
 
 }

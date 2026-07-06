@@ -36,6 +36,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/books/**").permitAll()
                         .requestMatchers("/api/categories/**").permitAll()
                         .requestMatchers("/api/authors/**").permitAll()
+                        .requestMatchers("/api/vnpay/**").permitAll()
+                        .requestMatchers("/api/public/borrow/**").permitAll()
                         .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/v3/api-docs/**").permitAll()
                         // Các request khác yêu cầu authenticated

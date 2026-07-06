@@ -48,7 +48,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                 <div className="flex flex-col items-center justify-center py-24 text-center">
                     <MaterialIcon name="error_outline" className="mb-4 text-[64px] text-red-400" />
                     <h2 className="mb-2 text-[24px] font-semibold text-on-surface dark:text-white">{UI_TEXT.COMMON.ERROR_LOAD_BOOK_DETAIL}</h2>
-                    <p className="text-on-surface-variant dark:text-white/70">{error || UI_TEXT.COMMON.BOOK_NOT_FOUND}</p>
+                    <p className="text-on-surface-variant dark:text-white/70">{UI_TEXT.COMMON.BOOK_NOT_FOUND}</p>
                 </div>
             </div>
         );
@@ -56,7 +56,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
 
     const bookDetail = bookToBookDetail(book);
 
-    // Map trending books thành RelatedBook[] (loại bỏ sách hiện tại)
+    // Map related books thành RelatedBook[]
     const relatedBooks: RelatedBook[] = relatedBooksData.map((b) => ({
         id: b.id,
         title: b.title,
@@ -83,19 +83,17 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                 </div>
 
                 {/* Middle Column: Metadata & Details */}
-                <div className="col-span-1 md:col-span-8 lg:col-span-6">
+                <div className="col-span-1 md:col-span-8 lg:col-span-9">
                     <BookInfo book={bookDetail} />
-                </div>
-
-                {/* Right Column: AI Chatbot */}
-                <div className="col-span-1 md:col-span-12 lg:col-span-3">
-                    <AIChatbot bookTitle={book.title} />
                 </div>
             </div>
             <ReviewSection initialReviews={reviews} loading={reviewsLoading} />
 
             {/* Related Books Section */}
             {relatedBooks.length > 0 && <RelatedBooks books={relatedBooks} categoryId={book?.categories?.[0]?.id?.toString()} />}
+
+            {/* AI Chatbot Floating Widget */}
+            <AIChatbot bookTitle={book.title} />
         </div>
     );
 }
