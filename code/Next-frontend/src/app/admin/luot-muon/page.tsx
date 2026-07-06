@@ -126,6 +126,7 @@ export default function LuotMuonPage() {
     const filteredRecords = records.filter((r) => {
         const matchSearch =
             search.trim() === "" ||
+            r.id.toLowerCase().includes(search.toLowerCase()) ||
             r.member.name.toLowerCase().includes(search.toLowerCase()) ||
             r.member.code.toLowerCase().includes(search.toLowerCase()) ||
             r.book.title.toLowerCase().includes(search.toLowerCase());
