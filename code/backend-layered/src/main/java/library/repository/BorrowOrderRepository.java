@@ -24,9 +24,18 @@ public interface BorrowOrderRepository extends JpaRepository<BorrowOrderEntity, 
     
     java.util.Optional<BorrowOrderEntity> findByOrderCode(String orderCode);
 
+    @Query("SELECT b FROM BorrowOrderEntity b WHERE b.customer.user.id = :userId ORDER BY b.createdAt DESC")
+    java.util.List<BorrowOrderEntity> findBorrowHistoryByUserId(@Param("userId") Integer userId);
+
+    @Query("SELECT b FROM BorrowOrderEntity b WHERE b.orderCode = :orderCode AND b.customer.user.id = :userId")
+    java.util.Optional<BorrowOrderEntity> findByOrderCodeAndCustomerUserId(@Param("orderCode") String orderCode, @Param("userId") Integer userId);
     Page<BorrowOrderEntity> findByCustomerIdOrderByCreatedAtDesc(Integer customerId, Pageable pageable);
 
     java.util.Optional<BorrowOrderEntity> findByOrderCodeAndCustomerId(String orderCode, Integer customerId);
+
+    java.util.Optional<BorrowOrderEntity> findByOrderCodeAndCustomerPhone(String orderCode, String phone);
+    
+    java.util.List<BorrowOrderEntity> findByCustomerEmailOrderByCreatedAtDesc(String email);
 
     List<BorrowOrderEntity> findTop5ByOrderByCreatedAtDesc();
 }

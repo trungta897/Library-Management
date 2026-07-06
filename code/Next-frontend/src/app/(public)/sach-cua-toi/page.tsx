@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { MaterialIcon } from "@/components/base/material-icon";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
+import { API_ERRORS, API_SUCCESS } from "@/constants/ui-text/shared/api";
 import { useFavorites } from "@/hooks/useFavorites";
 import { useAuth } from "@/providers/auth";
 
@@ -15,7 +16,7 @@ function MyBooksContent() {
     const searchParams = useSearchParams();
     const { isAuthenticated } = useAuth();
 
-    const initialLimit = parseInt(searchParams.get("limit") || "12", 10);
+    const initialLimit = parseInt(searchParams?.get("limit") || "12", 10);
     const [limit, setLimit] = useState(initialLimit);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("all");
@@ -33,7 +34,7 @@ function MyBooksContent() {
         const newLimit = limit + 12;
         setLimit(newLimit);
 
-        const params = new URLSearchParams(searchParams.toString());
+        const params = new URLSearchParams(searchParams?.toString() || "");
         params.set("limit", newLimit.toString());
         router.replace(`?${params.toString()}`, { scroll: false });
     };
@@ -41,9 +42,9 @@ function MyBooksContent() {
     const handleRemoveFavorite = async (bookId: number) => {
         const success = await removeFavorite(bookId);
         if (success) {
-            toast.success(UI_TEXT.COMMON?.SUCCESS_REMOVED_WISHLIST || "Đã xóa khỏi danh sách yêu thích");
+            toast.success(API_SUCCESS.FAVORITE_REMOVE_SUCCESS);
         } else {
-            toast.error(UI_TEXT.COMMON?.ERROR_OCCURRED || "Đã có lỗi xảy ra");
+            toast.error(API_ERRORS.GENERIC_ERROR);
         }
     };
 

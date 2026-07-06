@@ -13,9 +13,31 @@ interface BorrowFormProps {
     setReturnDate: (date: string) => void;
     paymentMethod: string;
     setPaymentMethod: (method: string) => void;
+    isGuest?: boolean;
+    fullName?: string;
+    setFullName?: (name: string) => void;
+    phone?: string;
+    setPhone?: (phone: string) => void;
+    email?: string;
+    setEmail?: (email: string) => void;
 }
 
-export default function BorrowForm({ book, pickupDate, setPickupDate, returnDate, setReturnDate, paymentMethod, setPaymentMethod }: BorrowFormProps) {
+export default function BorrowForm({
+    book,
+    pickupDate,
+    setPickupDate,
+    returnDate,
+    setReturnDate,
+    paymentMethod,
+    setPaymentMethod,
+    isGuest,
+    fullName,
+    setFullName,
+    phone,
+    setPhone,
+    email,
+    setEmail,
+}: BorrowFormProps) {
     const { BORROW } = UI_TEXT;
 
     // Minimum pickup date is today
@@ -29,6 +51,15 @@ export default function BorrowForm({ book, pickupDate, setPickupDate, returnDate
               return date.toISOString().split("T")[0];
           })()
         : minPickupDate;
+
+    // Maximum return date is pickup date + 14
+    const maxReturnDate = pickupDate
+        ? (() => {
+              const date = new Date(pickupDate);
+              date.setDate(date.getDate() + 14);
+              return date.toISOString().split("T")[0];
+          })()
+        : undefined;
 
     return (
         <div className="flex h-full flex-col">
@@ -54,11 +85,56 @@ export default function BorrowForm({ book, pickupDate, setPickupDate, returnDate
                                 value={book.title}
                             />
                             <p className="font-body-sm text-on-surface-variant dark:text-slate-400">
-                                {book.authors?.map((a) => a.name).join(", ") || "Unknown Author"} • {book.categories?.[0]?.name || "Sách"}
+                                {book.authors?.map((a) => a.name).join(", ") || "Unknown Author"} • {book.categories?.[0]?.name || UI_TEXT.COMMON.BOOK}
                             </p>
                         </div>
                     </div>
                 </div>
+
+                {/* Guest Information Grid */}
+                {isGuest && (
+                    <div className="border-primary-200 dark:border-primary-800 space-y-4 rounded-lg border bg-primary-50 p-4 dark:bg-primary-900/10">
+                        <h3 className="font-title-md text-primary-700 dark:text-primary-300">{UI_TEXT.BORROW.FORM.GUEST_INFO_TITLE}</h3>
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            <div className="space-y-1">
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-slate-400">
+                                    {UI_TEXT.BORROW.FORM.GUEST_NAME_LABEL}
+                                </label>
+                                <input
+                                    className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest p-3 font-body-md text-on-surface focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                    type="text"
+                                    placeholder="Nguyễn Văn A"
+                                    value={fullName}
+                                    onChange={(e) => setFullName?.(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-slate-400">
+                                    {UI_TEXT.BORROW.FORM.GUEST_PHONE_LABEL}
+                                </label>
+                                <input
+                                    className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest p-3 font-body-md text-on-surface focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                    type="tel"
+                                    placeholder="0912345678"
+                                    value={phone}
+                                    onChange={(e) => setPhone?.(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-1 md:col-span-2">
+                                <label className="font-label-caps text-label-caps text-on-surface-variant dark:text-slate-400">
+                                    {UI_TEXT.BORROW.FORM.GUEST_EMAIL_LABEL}
+                                </label>
+                                <input
+                                    className="w-full rounded-lg border border-outline-variant/50 bg-surface-container-lowest p-3 font-body-md text-on-surface focus:border-primary-500 focus:ring-1 focus:ring-primary-500 dark:border-slate-600 dark:bg-slate-800 dark:text-white"
+                                    type="email"
+                                    placeholder="email@example.com"
+                                    value={email || ""}
+                                    onChange={(e) => setEmail?.(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Date Selection Grid */}
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -81,7 +157,19 @@ export default function BorrowForm({ book, pickupDate, setPickupDate, returnDate
                                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                                 min={minPickupDate}
                                 value={pickupDate}
-                                onChange={(e) => setPickupDate(e.target.value)}
+                                onChange={(e) => {
+                                    const newDate = e.target.value;
+                                    setPickupDate(newDate);
+                                    // Reset return date if it's now invalid
+                                    if (returnDate) {
+                                        const rDateObj = new Date(returnDate);
+                                        const pDateObj = new Date(newDate);
+                                        const diffDays = (rDateObj.getTime() - pDateObj.getTime()) / (1000 * 60 * 60 * 24);
+                                        if (diffDays <= 0 || diffDays > 14) {
+                                            setReturnDate("");
+                                        }
+                                    }
+                                }}
                             />
                         </div>
                     </div>
@@ -104,6 +192,7 @@ export default function BorrowForm({ book, pickupDate, setPickupDate, returnDate
                                 type="date"
                                 onClick={(e) => (e.target as HTMLInputElement).showPicker?.()}
                                 min={minReturnDate}
+                                max={maxReturnDate}
                                 value={returnDate}
                                 onChange={(e) => setReturnDate(e.target.value)}
                             />
