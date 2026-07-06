@@ -7,6 +7,7 @@ import { UI_TEXT } from "@/constants/ui-text";
 import type { Review, ReviewFilter, ReviewFilterCounts } from "@/types/admin-review";
 import { getFilteredReviews } from "@/utils/admin-review-filters";
 import { STORAGE_KEY, createInitialReviews, readSavedReviews } from "@/utils/admin-review-storage";
+import HideReasonDialog from "./HideReasonDialog";
 import ReviewCard from "./ReviewCard";
 import ReviewFilterBar from "./ReviewFilterBar";
 import ReviewsHeader from "./ReviewsHeader";
@@ -14,6 +15,7 @@ import ReviewsHeader from "./ReviewsHeader";
 const TEXT = UI_TEXT.ADMIN_REVIEWS;
 const PAGE_SIZE = 5;
 const TEMPORARY_TOTAL_PAGES = 100;
+const DEFAULT_HIDE_REASON = TEXT.HIDE_REASON_OPTIONS[0];
 
 function getPaginationItems(currentPage: number, totalPages: number) {
     const pages = new Set([1, 2, totalPages - 1, totalPages, currentPage - 1, currentPage, currentPage + 1]);
@@ -46,6 +48,7 @@ export default function ReviewsModerationPageContent() {
     const [searchQuery, setSearchQuery] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [reasonReviewId, setReasonReviewId] = useState<string | null>(null);
+    const [selectedHideReason, setSelectedHideReason] = useState<string>(DEFAULT_HIDE_REASON);
     const [reasonDrafts, setReasonDrafts] = useState<Record<string, string>>(Object.fromEntries(reviews.map((review) => [review.id, review.hideReason])));
     const [hasLoadedSavedReviews, setHasLoadedSavedReviews] = useState(false);
 
@@ -101,7 +104,7 @@ export default function ReviewsModerationPageContent() {
     };
 
     const confirmHideReview = (reviewId: string) => {
-        const reason = reasonDrafts[reviewId]?.trim();
+        const reason = selectedHideReason === TEXT.CUSTOM_HIDE_REASON ? reasonDrafts[reviewId]?.trim() : selectedHideReason;
 
         if (!reason) {
             return;
@@ -111,6 +114,7 @@ export default function ReviewsModerationPageContent() {
             current.map((review) => (review.id === reviewId ? { ...review, status: "hidden", hideReason: reason, accent: "muted" } : review)),
         );
         setReasonReviewId(null);
+        setSelectedHideReason(DEFAULT_HIDE_REASON);
     };
 
     const restoreReview = (reviewId: string) => {
@@ -123,6 +127,11 @@ export default function ReviewsModerationPageContent() {
     const deleteReview = (reviewId: string) => {
         setReviews((current) => current.filter((review) => review.id !== reviewId));
         setReasonReviewId((current) => (current === reviewId ? null : current));
+    };
+
+    const openHideReasonDialog = (reviewId: string) => {
+        setSelectedHideReason(DEFAULT_HIDE_REASON);
+        setReasonReviewId(reviewId);
     };
 
     return (
@@ -149,11 +158,7 @@ export default function ReviewsModerationPageContent() {
                                 <ReviewCard
                                     key={review.id}
                                     review={review}
-                                    reasonDraft={reasonDrafts[review.id] ?? ""}
-                                    isReasonOpen={reasonReviewId === review.id}
-                                    onReasonChange={(value) => updateReasonDraft(review.id, value)}
-                                    onToggleReason={() => setReasonReviewId((current) => (current === review.id ? null : review.id))}
-                                    onConfirmHide={() => confirmHideReview(review.id)}
+                                    onRequestHide={() => openHideReasonDialog(review.id)}
                                     onRestore={() => restoreReview(review.id)}
                                     onDelete={() => deleteReview(review.id)}
                                 />
@@ -207,6 +212,27 @@ export default function ReviewsModerationPageContent() {
                     </nav>
                 </div>
             </main>
+
+            <HideReasonDialog
+                isOpen={reasonReviewId !== null}
+                selectedReason={selectedHideReason}
+                reason={reasonReviewId ? (reasonDrafts[reasonReviewId] ?? "") : ""}
+                onSelectedReasonChange={setSelectedHideReason}
+                onReasonChange={(value) => {
+                    if (reasonReviewId) {
+                        updateReasonDraft(reasonReviewId, value);
+                    }
+                }}
+                onConfirm={() => {
+                    if (reasonReviewId) {
+                        confirmHideReview(reasonReviewId);
+                    }
+                }}
+                onClose={() => {
+                    setReasonReviewId(null);
+                    setSelectedHideReason(DEFAULT_HIDE_REASON);
+                }}
+            />
         </div>
     );
 }
