@@ -18,6 +18,7 @@ export const ADMIN_BORROW_MANAGEMENT = {
         BTN_APPLY_FILTER: "Lọc",
         LABEL_FROM: "Từ:",
         LABEL_TO: "Đến:",
+        PAGINATION_PAGE: "Trang",
     },
     TABLE: {
         COL_MEMBER: "Thành viên",
@@ -36,8 +37,10 @@ export const ADMIN_BORROW_MANAGEMENT = {
         STATUS_READY: "Chờ lấy",
         STATUS_RETURNED: "Đã trả",
         STATUS_PENDING: "Chờ duyệt",
+        STATUS_PENDING_RENEWAL: "Chờ duyệt gia hạn",
         NO_DATE: "—",
         EMPTY_STATE: "Không có dữ liệu lượt mượn",
+        GUEST_BADGE: "KHÁCH",
     },
     MODAL: {
         CREATE_TITLE: "Tạo phiếu mượn mới",
@@ -80,5 +83,6 @@ export const ADMIN_BORROW_MANAGEMENT = {
         FEE_DISCOUNT: "Giảm giá:",
         FEE_DEPOSIT: "Tiền cọc:",
         FEE_TOTAL: "Tổng cộng:",
+        GUEST_BADGE: "KHÁCH",
     },
 };
