@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -10,8 +11,6 @@ import { RENEW_PAGE } from "@/constants/ui-text/public";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { getBorrowOrderDetail, renewBorrowOrder } from "@/services/borrow";
 import { BorrowOrderDetailResponseDto } from "@/types/borrow";
-
-("use client");
 
 const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString("vi-VN")}đ`;

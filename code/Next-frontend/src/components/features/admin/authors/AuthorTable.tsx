@@ -1,3 +1,4 @@
+"use client";
 import { useCallback, useEffect, useState } from "react";
 import { Edit2, Feather, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -7,8 +8,6 @@ import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { authorService } from "@/services/author";
 import type { Author } from "@/types/author";
 import AuthorModal from "./AuthorModal";
-
-("use client");
 
 export default function AuthorTable() {
     const [authors, setAuthors] = useState<Author[]>([]);

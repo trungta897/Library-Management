@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useState } from "react";
 import { Loader2, Save, X } from "lucide-react";
 import CreatableSelect from "react-select/creatable";
@@ -10,8 +11,6 @@ import { categoryService } from "@/services/category";
 import type { Author } from "@/types/author";
 import type { BookCreateRequest } from "@/types/book";
 import type { Category } from "@/types/category";
-
-("use client");
 
 interface AddBookModalProps {
     isOpen: boolean;

@@ -1,10 +1,9 @@
+"use client";
 import { useEffect, useState } from "react";
 import { BookOpen, CalendarDays, Loader2, User as UserIcon, X } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { createAdminBorrowOrder } from "@/services/adminBorrow";
-
-("use client");
 
 const T = UI_TEXT.ADMIN_BORROW_MANAGEMENT.MODAL;
 

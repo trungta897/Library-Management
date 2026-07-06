@@ -1,3 +1,4 @@
+"use client";
 import { ChangeEvent, useState } from "react";
 import { BaseButton } from "@/components/base/base-button";
 import { BaseInput } from "@/components/base/base-input";
@@ -6,8 +7,6 @@ import { SuccessModal } from "@/components/base/success-modal";
 import { UI_TEXT } from "@/constants/ui-text";
 import { PROFILE_MOCK } from "@/constants/ui-text/public/profile";
 import ProfileAvatar from "./ProfileAvata";
-
-("use client");
 
 type ProfileData = {
     fullName: string;

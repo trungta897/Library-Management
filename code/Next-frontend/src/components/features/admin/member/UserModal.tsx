@@ -1,11 +1,10 @@
+"use client";
 import { useEffect, useState } from "react";
 import { BookOpen, Lock, Mail, ShieldAlert, User as UserIcon, X } from "lucide-react";
 import { UI_TEXT } from "@/constants/ui-text";
 import { ADMIN_UI } from "@/constants/ui-text/admin";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import type { User } from "@/types/user";
-
-("use client");
 
 interface UserModalProps {
     open: boolean;

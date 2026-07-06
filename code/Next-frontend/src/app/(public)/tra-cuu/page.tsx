@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import Link from "next/link";
 import { MaterialIcon } from "@/components/base/material-icon";
@@ -5,8 +6,6 @@ import { UI_TEXT } from "@/constants/ui-text";
 import { API_ERRORS } from "@/constants/ui-text/shared/api";
 import { getGuestBorrowOrderDetail } from "@/services/borrow";
 import type { BorrowOrderDetailResponseDto } from "@/types/borrow";
-
-("use client");
 
 export default function GuestLookupPage() {
     const [orderCode, setOrderCode] = useState<string>("");
