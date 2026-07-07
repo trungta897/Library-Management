@@ -74,7 +74,6 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
             }
             order.setSubtotalFee(totalRentalFee);
             
-            java.math.BigDecimal overdueFee = java.math.BigDecimal.ZERO;
             // Solidify penalty if overdue
             java.math.BigDecimal overdueFee = feeCalculatorService.calculateOverdueFee(order.getDueDate(), LocalDate.now());
             if (overdueFee.compareTo(java.math.BigDecimal.ZERO) > 0) {
@@ -127,7 +126,6 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
         String orderCode = "BO-" + java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // Phí thuê = 0 khi tạo đơn, sẽ tính theo ngày thực tế khi trả sách
-        java.math.BigDecimal rentalFeePerBook = java.math.BigDecimal.ZERO;
         java.math.BigDecimal totalRentalFee = java.math.BigDecimal.ZERO;
 
         BorrowOrderEntity borrowOrder = BorrowOrderEntity.builder()
