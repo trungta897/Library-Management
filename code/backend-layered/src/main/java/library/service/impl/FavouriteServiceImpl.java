@@ -32,6 +32,7 @@ public class FavouriteServiceImpl implements FavouriteService {
     private final FavouriteRepository favouriteRepository;
     private final CustomerRepository customerRepository;
     private final BookRepository bookRepository;
+    private final library.mapper.BookMapper bookMapper;
 
     @Override
     @Transactional
@@ -72,43 +73,7 @@ public class FavouriteServiceImpl implements FavouriteService {
     @Override
     public Page<BookListResponse> getFavouritesByCustomer(Integer customerId, Pageable pageable) {
         Page<FavouriteEntity> favourites = favouriteRepository.findByIdCustomerId(customerId, pageable);
-        return favourites.map(fav -> toBookListResponse(fav.getBook()));
+        return favourites.map(fav -> bookMapper.toBookListResponse(fav.getBook()));
     }
 
-    private BookListResponse toBookListResponse(BookEntity entity) {
-        return BookListResponse.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .authors(mapAuthors(entity.getAuthors()))
-                .categories(mapCategories(entity.getCategories()))
-                .imageUrl(entity.getImageUrl())
-                .rating(entity.getRating())
-                .availableQuantity(entity.getAvailableQuantity())
-                .quantity(entity.getQuantity())
-                .isbn(entity.getIsbn())
-                .shelfLocation(entity.getShelfLocation())
-                .build();
-    }
-
-    private List<AuthorResponse> mapAuthors(Set<AuthorEntity> authors) {
-        if (authors == null) return List.of();
-        return authors.stream()
-                .map(author -> AuthorResponse.builder()
-                        .id(author.getId())
-                        .name(author.getName())
-                        .biography(author.getBiography())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    private List<CategoryResponse> mapCategories(Set<CategoryEntity> categories) {
-        if (categories == null) return List.of();
-        return categories.stream()
-                .map(category -> CategoryResponse.builder()
-                        .id(category.getId())
-                        .name(category.getName())
-                        .description(category.getDescription())
-                        .build())
-                .collect(Collectors.toList());
-    }
 }

@@ -58,6 +58,7 @@ public class BorrowOrderEntity extends BaseEntity {
     private BigDecimal totalDeposit;
 
     @OneToMany(mappedBy = "borrowOrder", fetch = FetchType.LAZY)
+    @org.hibernate.annotations.BatchSize(size = 50)
     @Builder.Default
     private List<BorrowOrderDetailEntity> orderDetails = new ArrayList<>();
 

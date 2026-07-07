@@ -32,18 +32,19 @@ public class BookServiceImpl implements BookService {
     private final library.repository.CategoryRepository categoryRepository;
     private final library.repository.AuthorRepository authorRepository;
     private final SystemLogService systemLogService;
+    private final library.mapper.BookMapper bookMapper;
 
     @Override
     public List<BookListResponse> getAllBooks() {
         return bookRepository.findAll().stream()
-                .map(this::toBookListResponse)
+                .map(bookMapper::toBookListResponse)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<BookListResponse> getTopRatedBooks() {
         return bookRepository.findTop10ByOrderByRatingDesc().stream()
-                .map(this::toBookListResponse)
+                .map(bookMapper::toBookListResponse)
                 .collect(Collectors.toList());
     }
 
@@ -53,7 +54,7 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new CustomBusinessException(
                         "Không tìm thấy sách với ID: " + id,
                         HttpStatus.NOT_FOUND));
-        return toBookResponse(book);
+        return bookMapper.toBookResponse(book);
     }
 
     @Override
@@ -64,7 +65,7 @@ public class BookServiceImpl implements BookService {
             int size) {
         org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
         return bookRepository.findForAdminInventory(keyword, categoryId, pageable)
-                .map(this::toBookListResponse);
+                .map(bookMapper::toBookListResponse);
     }
 
     @Override
@@ -128,7 +129,7 @@ public class BookServiceImpl implements BookService {
 
         BookEntity savedBook = bookRepository.save(book);
         systemLogService.logAction("Thêm sách mới", "Admin đã thêm sách mới: " + savedBook.getTitle());
-        return toBookResponse(savedBook);
+        return bookMapper.toBookResponse(savedBook);
     }
 
     @Override
@@ -184,7 +185,7 @@ public class BookServiceImpl implements BookService {
 
         bookRepository.save(book);
         systemLogService.logAction("Cập nhật sách", "Admin đã cập nhật thông tin sách: " + book.getTitle());
-        return toBookResponse(book);
+        return bookMapper.toBookResponse(book);
     }
 
     @Override
@@ -199,7 +200,7 @@ public class BookServiceImpl implements BookService {
         Page<BookEntity> bookPage = bookRepository.findWithFilters(kw, categoryId, authorId, pub, minRating, isAvailable, pageable);
 
         List<BookResponse> responses = bookPage.getContent().stream()
-                .map(this::toBookResponse)
+                .map(bookMapper::toBookResponse)
                 .collect(Collectors.toList());
 
         return new BookPageResponse(
@@ -222,7 +223,7 @@ public class BookServiceImpl implements BookService {
     private BookPageResponse toPageResponse(Page<BookEntity> bookPage) {
         return BookPageResponse.builder()
                 .content(bookPage.getContent().stream()
-                        .map(this::toBookResponse)
+                        .map(bookMapper::toBookResponse)
                         .collect(Collectors.toList()))
                 .page(bookPage.getNumber())
                 .size(bookPage.getSize())
@@ -250,61 +251,4 @@ public class BookServiceImpl implements BookService {
         };
     }
 
-    private BookListResponse toBookListResponse(BookEntity entity) {
-        return BookListResponse.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .authors(mapAuthors(entity.getAuthors()))
-                .categories(mapCategories(entity.getCategories()))
-                .imageUrl(entity.getImageUrl())
-                .rating(entity.getRating())
-                .availableQuantity(entity.getAvailableQuantity())
-                .quantity(entity.getQuantity())
-                .isbn(entity.getIsbn())
-                .shelfLocation(entity.getShelfLocation())
-                .build();
-    }
-
-    private BookResponse toBookResponse(BookEntity entity) {
-        return BookResponse.builder()
-                .id(entity.getId())
-                .title(entity.getTitle())
-                .authors(mapAuthors(entity.getAuthors()))
-                .publisher(entity.getPublisher())
-                .publicationDate(entity.getPublicationDate())
-                .pages(entity.getPages())
-                .isbn(entity.getIsbn())
-                .description(entity.getDescription())
-                .imageUrl(entity.getImageUrl())
-                .rating(entity.getRating())
-                .reviewCount(entity.getReviewCount())
-                .availableQuantity(entity.getAvailableQuantity())
-                .quantity(entity.getQuantity())
-                .shelfLocation(entity.getShelfLocation())
-                .depositPrice(entity.getDepositPrice())
-                .categories(mapCategories(entity.getCategories()))
-                .build();
-    }
-
-    private List<library.dto.response.CategoryResponse> mapCategories(java.util.Set<library.entity.CategoryEntity> categories) {
-        if (categories == null) return Collections.emptyList();
-        return categories.stream()
-                .map(c -> library.dto.response.CategoryResponse.builder()
-                        .id(c.getId())
-                        .name(c.getName())
-                        .description(c.getDescription())
-                        .build())
-                .collect(Collectors.toList());
-    }
-
-    private List<library.dto.response.AuthorResponse> mapAuthors(java.util.Set<library.entity.AuthorEntity> authors) {
-        if (authors == null) return Collections.emptyList();
-        return authors.stream()
-                .map(a -> library.dto.response.AuthorResponse.builder()
-                        .id(a.getId())
-                        .name(a.getName())
-                        .biography(a.getBiography())
-                        .build())
-                .collect(Collectors.toList());
-    }
 }
