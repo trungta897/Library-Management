@@ -88,6 +88,10 @@ public class UserServiceImpl implements UserService {
             throw new library.common.exception.CustomBusinessException("Mật khẩu hiện tại không chính xác", HttpStatus.BAD_REQUEST);
         }
 
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new library.common.exception.CustomBusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại", HttpStatus.BAD_REQUEST);
+        }
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
     }
@@ -109,6 +113,10 @@ public class UserServiceImpl implements UserService {
         boolean isValid = otpService.validateOtp(request.getEmail(), request.getOtp());
         if (!isValid) {
             throw new library.common.exception.CustomBusinessException("Mã xác nhận (OTP) không chính xác hoặc đã hết hạn", HttpStatus.BAD_REQUEST);
+        }
+
+        if (passwordEncoder.matches(request.getNewPassword(), user.getPassword())) {
+            throw new library.common.exception.CustomBusinessException("Mật khẩu mới không được trùng với mật khẩu hiện tại", HttpStatus.BAD_REQUEST);
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
