@@ -33,6 +33,7 @@ public class UserServiceImpl implements UserService {
     private final JwtUtil jwtUtil;
     private final SystemLogService systemLogService;
     private final library.service.OtpService otpService;
+    private final library.mapper.UserMapper userMapper;
 
     @SuppressWarnings("null")
     private String createRefreshToken(UserEntity user) {
@@ -74,16 +75,7 @@ public class UserServiceImpl implements UserService {
 
         systemLogService.logAction(savedUser, "Đăng ký tài khoản", "Người dùng " + savedUser.getEmail() + " đã đăng ký tài khoản mới.");
 
-        return RegisterResponse.builder()
-                .id(savedUser.getId())
-                .fullName(savedUser.getFullName())
-                .email(savedUser.getEmail())
-                .phone(savedUser.getPhone())
-                .role(savedUser.getRole().name())
-                .token(token)
-                .refreshToken(refreshToken)
-                .createdAt(savedUser.getCreatedAt())
-                .build();
+        return userMapper.toRegisterResponse(savedUser, token, refreshToken);
     }
 
     @Override
@@ -146,16 +138,7 @@ public class UserServiceImpl implements UserService {
 
         systemLogService.logAction(user, "Đăng nhập", "Người dùng " + user.getEmail() + " đã đăng nhập hệ thống.");
 
-        return LoginResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .user(LoginResponse.UserInfo.builder()
-                        .id(user.getId())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .role(user.getRole().name())
-                        .build())
-                .build();
+        return userMapper.toLoginResponse(user, token, refreshToken);
     }
 
     @Override
@@ -186,16 +169,7 @@ public class UserServiceImpl implements UserService {
 
         systemLogService.logAction(user, "Đăng nhập Google", "Người dùng " + user.getEmail() + " đã đăng nhập bằng Google.");
 
-        return LoginResponse.builder()
-                .token(token)
-                .refreshToken(refreshToken)
-                .user(LoginResponse.UserInfo.builder()
-                        .id(user.getId())
-                        .email(user.getEmail())
-                        .fullName(user.getFullName())
-                        .role(user.getRole().name())
-                        .build())
-                .build();
+        return userMapper.toLoginResponse(user, token, refreshToken);
     }
 
     @Override

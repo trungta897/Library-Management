@@ -35,6 +35,8 @@ public class BookReturnServiceImpl implements BookReturnService {
     private final BookCopyRepository bookCopyRepository;
     private final library.service.VnPayService vnPayService;
     private final library.repository.PaymentRepository paymentRepository;
+    private final library.service.FeeCalculatorService feeCalculatorService;
+    private final library.mapper.BookReturnMapper bookReturnMapper;
 
     @Override
     @Transactional
@@ -56,27 +58,13 @@ public class BookReturnServiceImpl implements BookReturnService {
         }
 
         // 3. Find active policy or create default if not exists
-        BorrowingPolicyEntity policy = borrowingPolicyRepository.findAll().stream().findFirst()
-                .orElseGet(() -> {
-                    BorrowingPolicyEntity defaultPolicy = BorrowingPolicyEntity.builder()
-                            .maxBooks(5)
-                            .maxBorrowDays(14)
-                            .overdueFinePerDay(new java.math.BigDecimal("5000"))
-                            .lostBookMultiplier(new java.math.BigDecimal("2.0"))
-                            .damageFeePercent(new java.math.BigDecimal("0.5"))
-                            .maxExtensions(2)
-                            .build();
-                    return borrowingPolicyRepository.save(defaultPolicy);
-                });
+        long overdueDays = 0;
+        if (borrowOrder.getDueDate() != null && LocalDate.now().isAfter(borrowOrder.getDueDate())) {
+            overdueDays = ChronoUnit.DAYS.between(borrowOrder.getDueDate(), LocalDate.now());
+        }
 
-        // 4. Calculate overdue days and overdue fine
-        LocalDate dueDate = borrowOrder.getDueDate();
-        LocalDate returnDate = LocalDate.now();
-        long daysBetween = ChronoUnit.DAYS.between(dueDate, returnDate);
-        int overdueDays = Math.max(0, (int) daysBetween);
-
-        BigDecimal totalOverdueFine = BigDecimal.ZERO;
         BigDecimal totalConditionFine = BigDecimal.ZERO;
+        BigDecimal totalOverdueFine = BigDecimal.ZERO;
         BigDecimal thisReturnRentalFee = BigDecimal.ZERO;
         BigDecimal thisReturnDeposit = BigDecimal.ZERO;
 
@@ -85,7 +73,7 @@ public class BookReturnServiceImpl implements BookReturnService {
                 .borrowOrder(borrowOrder)
                 .assistant(assistant)
                 .returnDate(LocalDateTime.now())
-                .overdueDays(overdueDays)
+                .overdueDays((int) overdueDays)
                 .note(requestDto.getGeneralNote())
                 .details(new ArrayList<>())
                 .build();
@@ -111,20 +99,16 @@ public class BookReturnServiceImpl implements BookReturnService {
             BigDecimal overdueFinePerBook = BigDecimal.ZERO;
 
             if (overdueDays > 0) {
-                overdueFinePerBook = policy.getOverdueFinePerDay().multiply(new BigDecimal(overdueDays));
+                // Áp dụng phí phạt trễ hạn cho cuốn sách này dựa trên policy
+                overdueFinePerBook = feeCalculatorService.getActivePolicy().getOverdueFinePerDay().multiply(new BigDecimal(overdueDays));
             }
             totalOverdueFine = totalOverdueFine.add(overdueFinePerBook);
 
             thisReturnRentalFee = thisReturnRentalFee.add(orderDetail.getRentalFee() != null ? orderDetail.getRentalFee() : BigDecimal.ZERO);
             thisReturnDeposit = thisReturnDeposit.add(orderDetail.getDepositPrice() != null ? orderDetail.getDepositPrice() : BigDecimal.ZERO);
 
-            if (detailReq.getConditionStatus() == ConditionStatus.DAMAGED) {
-                BigDecimal depositPrice = bookCopy.getBook().getDepositPrice() != null ? bookCopy.getBook().getDepositPrice() : BigDecimal.ZERO;
-                conditionFine = depositPrice.multiply(policy.getDamageFeePercent());
-            } else if (detailReq.getConditionStatus() == ConditionStatus.LOST) {
-                BigDecimal depositPrice = bookCopy.getBook().getDepositPrice() != null ? bookCopy.getBook().getDepositPrice() : BigDecimal.ZERO;
-                conditionFine = depositPrice.multiply(policy.getLostBookMultiplier());
-            }
+            BigDecimal depositPrice = bookCopy.getBook().getDepositPrice() != null ? bookCopy.getBook().getDepositPrice() : BigDecimal.ZERO;
+            conditionFine = feeCalculatorService.calculateDamageFee(depositPrice, detailReq.getConditionStatus());
 
             totalConditionFine = totalConditionFine.add(conditionFine);
 
@@ -197,64 +181,10 @@ public class BookReturnServiceImpl implements BookReturnService {
             fineRepository.save(fine);
         }
 
-        return mapToResponseDto(bookReturn, fine);
+        return bookReturnMapper.toAdminReturnBookResponseDto(bookReturn, fine);
     }
 
-    private AdminReturnBookResponseDto mapToResponseDto(BookReturnEntity bookReturn, FineEntity fine) {
-        AdminReturnBookResponseDto response = new AdminReturnBookResponseDto();
-        response.setBookReturnId(bookReturn.getId());
-        response.setBorrowOrderId(bookReturn.getBorrowOrder().getId());
-        response.setReturnDate(bookReturn.getReturnDate());
-        response.setOverdueDays(bookReturn.getOverdueDays());
-        response.setTotalFineAmount(bookReturn.getTotalFineAmount());
-        response.setNote(bookReturn.getNote());
 
-        BorrowOrderEntity order = bookReturn.getBorrowOrder();
-        response.setOrderCode(order.getOrderCode());
-
-        BigDecimal thisReturnRentalFee = BigDecimal.ZERO;
-        BigDecimal thisReturnDeposit = BigDecimal.ZERO;
-        java.util.List<ReturnDetailDto> detailsDto = new java.util.ArrayList<>();
-
-        if (bookReturn.getDetails() != null) {
-            for (BookReturnDetailEntity detail : bookReturn.getDetails()) {
-                ReturnDetailDto dto = new ReturnDetailDto();
-                dto.setBookTitle(detail.getBookCopy().getBook().getTitle());
-                dto.setBarcode(detail.getBookCopy().getBarcode());
-                dto.setConditionStatus(detail.getConditionStatus());
-                dto.setFineAmount(detail.getFineAmount());
-                dto.setNote(detail.getNote());
-                detailsDto.add(dto);
-
-                for (BorrowOrderDetailEntity od : order.getOrderDetails()) {
-                    if (od.getBookCopy().getId().equals(detail.getBookCopy().getId())) {
-                        thisReturnRentalFee = thisReturnRentalFee.add(od.getRentalFee() != null ? od.getRentalFee() : BigDecimal.ZERO);
-                        thisReturnDeposit = thisReturnDeposit.add(od.getDepositPrice() != null ? od.getDepositPrice() : BigDecimal.ZERO);
-                        break;
-                    }
-                }
-            }
-        }
-        
-        BigDecimal fineAmt = bookReturn.getTotalFineAmount() != null ? bookReturn.getTotalFineAmount() : BigDecimal.ZERO;
-
-        response.setSubtotalFee(thisReturnRentalFee);
-        response.setTotalDeposit(thisReturnDeposit);
-        response.setTotalAmountToPay(thisReturnRentalFee.add(fineAmt).subtract(thisReturnDeposit));
-        response.setDetails(detailsDto);
-
-        if (fine != null) {
-            FineDto fineDto = new FineDto();
-            fineDto.setId(fine.getId());
-            fineDto.setCustomerId(fine.getCustomer().getId());
-            fineDto.setAmount(fine.getAmount());
-            fineDto.setStatus(fine.getStatus());
-            fineDto.setCreatedAt(fine.getCreatedAt());
-            response.setFine(fineDto);
-        }
-
-        return response;
-    }
 
     private BigDecimal calculateAmountToPayForReturn(BookReturnEntity bookReturn) {
         BigDecimal thisReturnRentalFee = BigDecimal.ZERO;

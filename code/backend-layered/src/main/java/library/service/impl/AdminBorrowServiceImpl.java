@@ -27,7 +27,9 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
     private final library.repository.BookCopyRepository bookCopyRepository;
     private final library.repository.BorrowExtensionRepository borrowExtensionRepository;
     private final library.repository.PaymentRepository paymentRepository;
+    private final library.service.FeeCalculatorService feeCalculatorService;
     private final SystemLogService systemLogService;
+    private final library.mapper.AdminBorrowOrderMapper adminBorrowOrderMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -39,58 +41,7 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
             return o2.getCreatedAt().compareTo(o1.getCreatedAt());
         });
 
-        return orders.stream().map(order -> {
-            List<BorrowOrderDetailEntity> details = borrowOrderDetailRepository.findByBorrowOrderId(order.getId());
-
-            String bookTitle = "N/A";
-            String bookAuthor = "N/A";
-
-            if (!details.isEmpty()) {
-                BorrowOrderDetailEntity firstDetail = details.get(0);
-                if (firstDetail.getBookCopy() != null && firstDetail.getBookCopy().getBook() != null) {
-                    bookTitle = firstDetail.getBookCopy().getBook().getTitle();
-                    // Assuming Author list is accessed, get the first author if available.
-                    // For simplicity, we just leave it as N/A if it's complex, or if BookEntity has
-                    // authors
-                    if (firstDetail.getBookCopy().getBook().getAuthors() != null
-                            && !firstDetail.getBookCopy().getBook().getAuthors().isEmpty()) {
-                        bookAuthor = firstDetail.getBookCopy().getBook().getAuthors().iterator().next().getName();
-                    }
-                }
-            }
-
-            // Calculate overday
-            Integer overdayCount = null;
-            if (order.getStatus() == BorrowOrderStatus.BORROWED && order.getDueDate() != null) {
-                long days = ChronoUnit.DAYS.between(order.getDueDate(), LocalDate.now());
-                if (days > 0) {
-                    overdayCount = (int) days;
-                    // Note: Could also update status to OVERDUE here, but usually done via a batch
-                    // job.
-                }
-            } else if (order.getStatus() == BorrowOrderStatus.OVERDUE && order.getDueDate() != null) {
-                long days = ChronoUnit.DAYS.between(order.getDueDate(), LocalDate.now());
-                if (days > 0) {
-                    overdayCount = (int) days;
-                }
-            }
-
-            return AdminBorrowOrderDto.builder()
-                    .id(order.getOrderCode())
-                    .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : "Unknown")
-                    .customerCode(order.getCustomer() != null
-                            ? order.getCustomer().getLibraryCardNo() != null ? order.getCustomer().getLibraryCardNo()
-                                    : order.getCustomer().getPhone()
-                            : "N/A")
-                    .bookTitle(bookTitle)
-                    .bookAuthor(bookAuthor)
-                    .borrowDate(order.getBorrowDate())
-                    .dueDate(order.getDueDate())
-                    .status(order.getStatus())
-                    .overdayCount(overdayCount)
-                    .isGuest(order.getCustomer() != null && order.getCustomer().getUser() == null)
-                    .build();
-        }).collect(Collectors.toList());
+        return orders.stream().map(adminBorrowOrderMapper::toAdminBorrowOrderDto).collect(Collectors.toList());
     }
 
     @Override
@@ -110,16 +61,10 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
             order.setActualReturnDate(LocalDate.now()); // Confirm return date
             
             // Solidify penalty if overdue
-            if (order.getDueDate() != null && LocalDate.now().isAfter(order.getDueDate())) {
-                long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(), LocalDate.now());
-                if (overdueDays > 0) {
-                    java.math.BigDecimal penaltyPerDay = new java.math.BigDecimal("10000");
-                    java.math.BigDecimal overdueFee = penaltyPerDay.multiply(new java.math.BigDecimal(overdueDays));
-                    
-                    java.math.BigDecimal currentTotalFee = order.getTotalFee() != null ? order.getTotalFee() : (order.getSubtotalFee() != null ? order.getSubtotalFee() : java.math.BigDecimal.ZERO);
-                    
-                    order.setTotalFee(currentTotalFee.add(overdueFee));
-                }
+            java.math.BigDecimal overdueFee = feeCalculatorService.calculateOverdueFee(order.getDueDate(), LocalDate.now());
+            if (overdueFee.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                java.math.BigDecimal currentTotalFee = order.getTotalFee() != null ? order.getTotalFee() : (order.getSubtotalFee() != null ? order.getSubtotalFee() : java.math.BigDecimal.ZERO);
+                order.setTotalFee(currentTotalFee.add(overdueFee));
             }
         }
 
@@ -152,74 +97,7 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
                 .orElseThrow(() -> new library.common.exception.CustomBusinessException("Borrow order not found",
                         org.springframework.http.HttpStatus.NOT_FOUND));
 
-        List<BorrowOrderDetailEntity> details = borrowOrderDetailRepository.findByBorrowOrderId(order.getId());
-
-        List<library.dto.admin.BorrowItemDto> items = details.stream().map(detail -> {
-            String title = "N/A";
-            String author = "N/A";
-            String barcode = "N/A";
-
-            if (detail.getBookCopy() != null) {
-                barcode = detail.getBookCopy().getBarcode();
-                if (detail.getBookCopy().getBook() != null) {
-                    title = detail.getBookCopy().getBook().getTitle();
-                    if (detail.getBookCopy().getBook().getAuthors() != null
-                            && !detail.getBookCopy().getBook().getAuthors().isEmpty()) {
-                        author = detail.getBookCopy().getBook().getAuthors().iterator().next().getName();
-                    }
-                }
-            }
-
-            return library.dto.admin.BorrowItemDto.builder()
-                    .id(detail.getId())
-                    .bookCopyId(detail.getBookCopy() != null ? detail.getBookCopy().getId() : null)
-                    .bookTitle(title)
-                    .bookAuthor(author)
-                    .barcode(barcode)
-                    .rentalFee(detail.getRentalFee())
-                    .depositPrice(detail.getDepositPrice())
-                    .status(detail.getStatus())
-                    .build();
-        }).collect(Collectors.toList());
-
-        java.math.BigDecimal totalPaidOnline = java.math.BigDecimal.ZERO;
-        List<library.entity.PaymentEntity> successfulPayments = paymentRepository.findByBorrowOrderIdAndPaymentStatus(order.getId(), library.entity.PaymentStatus.SUCCESS);
-        for (library.entity.PaymentEntity p : successfulPayments) {
-            // We only deduct RENTAL_FEE (which includes old rental + fines) from the total fee
-            // (DEPOSIT is handled separately in totalDeposit)
-            if (p.getPaymentType() == library.entity.PaymentType.RENTAL_FEE || p.getPaymentType() == library.entity.PaymentType.FINE) {
-                totalPaidOnline = totalPaidOnline.add(p.getAmount());
-            }
-        }
-
-        java.math.BigDecimal currentTotal = order.getTotalFee() != null ? order.getTotalFee() : (order.getSubtotalFee() != null ? order.getSubtotalFee() : java.math.BigDecimal.ZERO);
-        java.math.BigDecimal actualAmountToPay = currentTotal.subtract(totalPaidOnline);
-        if (actualAmountToPay.compareTo(java.math.BigDecimal.ZERO) < 0) {
-            actualAmountToPay = java.math.BigDecimal.ZERO;
-        }
-
-        return library.dto.admin.AdminBorrowOrderDetailDto.builder()
-                .id(order.getId())
-                .orderCode(order.getOrderCode())
-                .borrowDate(order.getBorrowDate())
-                .pickupDate(order.getPickupDate())
-                .dueDate(order.getDueDate())
-                .status(order.getStatus())
-                .subtotalFee(order.getSubtotalFee())
-                .discountAmount(order.getDiscountAmount())
-                .totalFee(order.getTotalFee())
-                .totalDeposit(order.getTotalDeposit())
-                .totalPaidOnline(totalPaidOnline)
-                .actualAmountToPay(actualAmountToPay)
-                .customerName(order.getCustomer() != null ? order.getCustomer().getFullName() : "Unknown")
-                .customerCode(order.getCustomer() != null
-                        ? (order.getCustomer().getLibraryCardNo() != null ? order.getCustomer().getLibraryCardNo()
-                                : order.getCustomer().getPhone())
-                        : "N/A")
-                .customerPhone(order.getCustomer() != null ? order.getCustomer().getPhone() : "N/A")
-                .isGuest(order.getCustomer() != null && order.getCustomer().getUser() == null)
-                .items(items)
-                .build();
+        return adminBorrowOrderMapper.toAdminBorrowOrderDetailDto(order);
     }
 
     @Override
@@ -350,10 +228,9 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
             LocalDate requestedDate = extension.getRequestedAt().toLocalDate();
             LocalDate oldDueDate = order.getDueDate();
             if (oldDueDate != null && requestedDate.isAfter(oldDueDate)) {
-                long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(oldDueDate, requestedDate);
+                long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(), requestedDate);
                 if (overdueDays > 0) {
-                    java.math.BigDecimal penaltyPerDay = new java.math.BigDecimal("10000");
-                    java.math.BigDecimal overdueFee = penaltyPerDay.multiply(new java.math.BigDecimal(overdueDays));
+                    java.math.BigDecimal overdueFee = feeCalculatorService.calculateOverdueFee(order.getDueDate(), requestedDate);
                     
                     java.math.BigDecimal currentTotalFee = order.getTotalFee() != null ? order.getTotalFee() : (order.getSubtotalFee() != null ? order.getSubtotalFee() : java.math.BigDecimal.ZERO);
                     order.setTotalFee(currentTotalFee.add(overdueFee));
@@ -367,7 +244,9 @@ public class AdminBorrowServiceImpl implements AdminBorrowService {
             }
             long extensionDays = java.time.temporal.ChronoUnit.DAYS.between(baseDate, extension.getRequestedDueDate());
             if (extensionDays > 0) {
-                java.math.BigDecimal extensionFee = new java.math.BigDecimal("5000").multiply(new java.math.BigDecimal(extensionDays));
+                // extensionFee corresponds to the rental fee for the extended days
+                int numberOfBooks = borrowOrderDetailRepository.findByBorrowOrderId(order.getId()).size();
+                java.math.BigDecimal extensionFee = feeCalculatorService.calculateRentalFee(baseDate, extension.getRequestedDueDate(), numberOfBooks);
                 java.math.BigDecimal currentSubtotal = order.getSubtotalFee() != null ? order.getSubtotalFee() : java.math.BigDecimal.ZERO;
                 java.math.BigDecimal currentTotalFee = order.getTotalFee() != null ? order.getTotalFee() : java.math.BigDecimal.ZERO;
                 order.setSubtotalFee(currentSubtotal.add(extensionFee));

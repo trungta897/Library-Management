@@ -43,6 +43,8 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
     private final library.repository.ReservationRepository reservationRepository;
     private final SystemLogService systemLogService;
     private final library.service.EmailService emailService;
+    private final library.service.FeeCalculatorService feeCalculatorService;
+    private final library.mapper.BorrowOrderMapper borrowOrderMapper;
 
     @org.springframework.context.annotation.Lazy
     @org.springframework.beans.factory.annotation.Autowired
@@ -178,78 +180,9 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
     public java.util.List<library.dto.borrow.BorrowHistoryResponseDto> getBorrowHistory(Integer userId) {
         java.util.List<BorrowOrderEntity> orders = borrowOrderRepository.findBorrowHistoryByUserId(userId);
 
-        java.util.List<library.dto.borrow.BorrowHistoryResponseDto> result = new java.util.ArrayList<>();
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy");
-        java.text.NumberFormat currencyFormatter = java.text.NumberFormat
-                .getCurrencyInstance(new java.util.Locale("vi", "VN"));
-
-        for (BorrowOrderEntity order : orders) {
-            String title = "Unknown Book";
-            String author = "Unknown Author";
-            String imgSrc = null;
-
-            if (order.getOrderDetails() != null && !order.getOrderDetails().isEmpty()) {
-                library.entity.BookEntity book = order.getOrderDetails().get(0).getBookCopy().getBook();
-                title = book.getTitle();
-                if (book.getAuthors() != null && !book.getAuthors().isEmpty()) {
-                    author = book.getAuthors().iterator().next().getName();
-                } else if (book.getAuthor() != null && !book.getAuthor().isEmpty()) {
-                    author = book.getAuthor();
-                }
-                imgSrc = book.getImageUrl();
-            }
-
-            String depositFormatted = order.getTotalDeposit() != null
-                    ? currencyFormatter.format(order.getTotalDeposit())
-                    : "0 đ";
-            String depositReturnFormatted = depositFormatted; // Có thể cập nhật sau nếu admin trừ trực tiếp vào cọc
-            String status = order.getStatus().name().toLowerCase();
-
-            // Calculate late fee
-            java.math.BigDecimal storedLateFee = order.getTotalFee() != null && order.getSubtotalFee() != null
-                    ? order.getTotalFee().subtract(order.getSubtotalFee())
-                    : java.math.BigDecimal.ZERO;
-            if (storedLateFee.compareTo(java.math.BigDecimal.ZERO) < 0)
-                storedLateFee = java.math.BigDecimal.ZERO;
-
-            java.math.BigDecimal dynamicLateFee = java.math.BigDecimal.ZERO;
-            int overdueDays = 0;
-            if (order.getStatus() == library.entity.BorrowOrderStatus.OVERDUE ||
-                    order.getStatus() == library.entity.BorrowOrderStatus.PENDING_RENEWAL ||
-                    (order.getStatus() == library.entity.BorrowOrderStatus.BORROWED
-                            && java.time.LocalDate.now().isAfter(order.getDueDate()))) {
-                java.time.LocalDate compareDate = order.getActualReturnDate() != null ? order.getActualReturnDate()
-                        : java.time.LocalDate.now();
-                overdueDays = (int) java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(), compareDate);
-                if (overdueDays > 0)
-                    dynamicLateFee = new java.math.BigDecimal(overdueDays * 10000);
-            }
-            java.math.BigDecimal totalLateFee = storedLateFee.add(dynamicLateFee);
-            String lateFeeFormatted = totalLateFee.compareTo(java.math.BigDecimal.ZERO) > 0
-                    ? "+" + currencyFormatter.format(totalLateFee)
-                    : "0 đ";
-
-            long extensionCount = borrowExtensionRepository.countByBorrowOrderIdAndStatus(order.getId(),
-                    library.entity.BorrowExtensionStatus.APPROVED);
-
-            result.add(library.dto.borrow.BorrowHistoryResponseDto.builder()
-                    .id(order.getOrderCode())
-                    .title(title)
-                    .author(author)
-                    .borrowDate(order.getBorrowDate() != null ? order.getBorrowDate().format(formatter)
-                            : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate().format(formatter)
-                                    : ""))
-                    .dueDate(order.getDueDate() != null ? order.getDueDate().format(formatter) : "")
-                    .actualReturnDate(
-                            order.getActualReturnDate() != null ? order.getActualReturnDate().format(formatter) : null)
-                    .deposit(depositFormatted)
-                    .depositReturn(depositReturnFormatted)
-                    .lateFee(lateFeeFormatted)
-                    .status(status)
-                    .extensionCount((int) extensionCount)
-                    .imgSrc(imgSrc)
-                    .build());
-        }
+        java.util.List<library.dto.borrow.BorrowHistoryResponseDto> result = orders.stream()
+                .map(borrowOrderMapper::toBorrowHistoryResponseDto)
+                .collect(Collectors.toList());
 
         return result;
     }
@@ -508,7 +441,7 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
     @Override
     public Page<UserBorrowHistoryDto> getUserBorrowHistory(Integer customerId, Pageable pageable) {
         return borrowOrderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId, pageable)
-                .map(this::toHistoryDto);
+                .map(borrowOrderMapper::toUserBorrowHistoryDto);
     }
 
     @Override
@@ -516,44 +449,7 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
         BorrowOrderEntity order = borrowOrderRepository.findByOrderCodeAndCustomerId(orderCode, customerId)
                 .orElseThrow(() -> new CustomBusinessException("Borrow order not found", HttpStatus.NOT_FOUND));
 
-        BorrowOrderDetailEntity detail = order.getOrderDetails().isEmpty()
-                ? null
-                : order.getOrderDetails().get(0);
-
-        UserBorrowDetailDto.UserBorrowDetailDtoBuilder builder = UserBorrowDetailDto.builder()
-                .id(order.getId())
-                .orderCode(order.getOrderCode())
-                .status(resolveOrderStatus(order))
-                .borrowDate(order.getBorrowDate())
-                .pickupDate(order.getPickupDate())
-                .dueDate(order.getDueDate())
-                .totalDeposit(order.getTotalDeposit())
-                .totalFee(order.getTotalFee());
-
-        if (detail != null) {
-            BookCopyEntity bookCopy = detail.getBookCopy();
-            BookEntity book = bookCopy.getBook();
-            String authorNames = book.getAuthors().stream()
-                    .map(a -> a.getName())
-                    .collect(Collectors.joining(", "));
-
-            builder.bookTitle(book.getTitle())
-                    .bookAuthor(authorNames.isEmpty() ? book.getAuthor() : authorNames)
-                    .bookCoverImage(book.getImageUrl())
-                    .bookDetailStatus(detail.getStatus().name());
-        }
-
-        // Tính phí trễ hạn nếu quá hạn
-        if (order.getDueDate() != null && LocalDate.now().isAfter(order.getDueDate())
-                && !"RETURNED".equals(order.getStatus().name()) && !"CANCELLED".equals(order.getStatus().name())) {
-            long overdueDays = java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(), LocalDate.now());
-            BigDecimal lateFee = BigDecimal.valueOf(overdueDays * 5000);
-            builder.lateFee(lateFee);
-        } else {
-            builder.lateFee(BigDecimal.ZERO);
-        }
-
-        return builder.build();
+        return borrowOrderMapper.toUserBorrowDetailDto(order);
     }
 
     @Override
@@ -724,143 +620,7 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
             throw new CustomBusinessException("Không tìm thấy đơn mượn nào khớp với thông tin cung cấp.", HttpStatus.NOT_FOUND);
         }
 
-        return orders.stream().map(this::mapToBorrowOrderDetailResponseDto).collect(java.util.stream.Collectors.toList());
-    }
-
-    private library.dto.borrow.BorrowOrderDetailResponseDto mapToBorrowOrderDetailResponseDto(BorrowOrderEntity order) {
-
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter
-                .ofPattern("dd 'Tháng' MM, yyyy");
-        java.text.NumberFormat currencyFormatter = java.text.NumberFormat
-                .getCurrencyInstance(new java.util.Locale("vi", "VN"));
-
-        String borrowDateStr = order.getBorrowDate() != null ? order.getBorrowDate().format(formatter)
-                : (order.getCreatedAt() != null ? order.getCreatedAt().toLocalDate().format(formatter) : "");
-        String dueDateStr = order.getDueDate() != null ? order.getDueDate().format(formatter) : "";
-
-        // Mocking some dates that might not be fully implemented in DB yet
-        String deadlineDateStr = dueDateStr;
-        String reminderDateStr = order.getDueDate() != null ? order.getDueDate().minusDays(1).format(formatter) : "";
-        String borrowSuccessDateStr = order.getBorrowDate() != null ? order.getBorrowDate().format(formatter) : ""; // Real
-                                                                                                                    // borrow
-                                                                                                                    // date
-
-        String depositFormatted = order.getTotalDeposit() != null ? currencyFormatter.format(order.getTotalDeposit())
-                : "0 đ";
-
-        // Calculate amounts already paid online (RENTAL_FEE payments, not DEPOSIT)
-        BigDecimal totalPaidOnline = BigDecimal.ZERO;
-        java.util.List<PaymentEntity> successfulPayments = paymentRepository
-                .findByBorrowOrderIdAndPaymentStatus(order.getId(), PaymentStatus.SUCCESS);
-        for (PaymentEntity p : successfulPayments) {
-            if (p.getPaymentType() == PaymentType.RENTAL_FEE || p.getPaymentType() == PaymentType.FINE) {
-                totalPaidOnline = totalPaidOnline.add(p.getAmount());
-            }
-        }
-
-        // Calculate late fee: only show UNPAID overdue penalties
-        BigDecimal storedLateFee = order.getTotalFee() != null && order.getSubtotalFee() != null
-                ? order.getTotalFee().subtract(order.getSubtotalFee())
-                : BigDecimal.ZERO;
-        if (storedLateFee.compareTo(BigDecimal.ZERO) < 0)
-            storedLateFee = BigDecimal.ZERO;
-
-        BigDecimal dynamicLateFee = BigDecimal.ZERO;
-        String status = order.getStatus().name().toLowerCase();
-        int overdueDays = 0;
-
-        if ((order.getStatus() == BorrowOrderStatus.OVERDUE || order.getStatus() == BorrowOrderStatus.PENDING_RENEWAL)
-                && order.getDueDate() != null) {
-            overdueDays = (int) java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(),
-                    java.time.LocalDate.now());
-            if (overdueDays > 0) {
-                dynamicLateFee = new BigDecimal("10000").multiply(new BigDecimal(overdueDays));
-            } else {
-                overdueDays = 0;
-            }
-        } else if (order.getStatus() == BorrowOrderStatus.RETURNED && order.getDueDate() != null
-                && order.getActualReturnDate() != null) {
-            overdueDays = (int) java.time.temporal.ChronoUnit.DAYS.between(order.getDueDate(),
-                    order.getActualReturnDate());
-            if (overdueDays < 0)
-                overdueDays = 0;
-        }
-
-        BigDecimal totalLateFee = storedLateFee.add(dynamicLateFee);
-        BigDecimal unpaidLateFee = totalLateFee.subtract(totalPaidOnline).max(BigDecimal.ZERO);
-        String lateFeeFormatted = totalLateFee.compareTo(BigDecimal.ZERO) > 0
-                ? "+" + currencyFormatter.format(totalLateFee)
-                : "0 đ";
-
-        BigDecimal totalToDisplay = order.getTotalFee() != null ? order.getTotalFee() : BigDecimal.ZERO;
-        totalToDisplay = totalToDisplay.add(dynamicLateFee).subtract(totalPaidOnline);
-        if (totalToDisplay.compareTo(BigDecimal.ZERO) < 0)
-            totalToDisplay = BigDecimal.ZERO;
-        String totalFormatted = currencyFormatter.format(totalToDisplay);
-
-        java.util.List<library.dto.borrow.BorrowOrderDetailResponseDto.BookItemDto> bookItems = new java.util.ArrayList<>();
-        if (order.getOrderDetails() != null) {
-            for (BorrowOrderDetailEntity detail : order.getOrderDetails()) {
-                library.entity.BookEntity book = detail.getBookCopy().getBook();
-                String title = book.getTitle();
-                String author = "Unknown Author";
-                if (book.getAuthors() != null && !book.getAuthors().isEmpty()) {
-                    author = book.getAuthors().iterator().next().getName();
-                } else if (book.getAuthor() != null && !book.getAuthor().isEmpty()) {
-                    author = book.getAuthor();
-                }
-
-                String bookStatus = detail.getStatus().name().toLowerCase();
-                if (bookStatus.equals("borrowing"))
-                    bookStatus = "inUse";
-
-                bookItems.add(library.dto.borrow.BorrowOrderDetailResponseDto.BookItemDto.builder()
-                        .title(title)
-                        .author(author)
-                        .status(bookStatus)
-                        .imgSrc(book.getImageUrl())
-                        .build());
-            }
-        }
-
-        String rentalFeeFormatted = order.getSubtotalFee() != null ? currencyFormatter.format(order.getSubtotalFee())
-                : "0 đ";
-
-        String actualReturnDateStr = order.getActualReturnDate() != null ? order.getActualReturnDate().format(formatter)
-                : null;
-
-        long extensionCount = borrowExtensionRepository.countByBorrowOrderIdAndStatus(order.getId(),
-                library.entity.BorrowExtensionStatus.APPROVED);
-
-        String customerName = order.getCustomer().getFullName();
-        if (customerName == null) customerName = "Unknown";
-
-        String rawPhone = order.getCustomer().getPhone();
-        String customerPhone = "***";
-        if (rawPhone != null && rawPhone.length() >= 3) {
-            customerPhone = "*******" + rawPhone.substring(rawPhone.length() - 3);
-        }
-
-        return library.dto.borrow.BorrowOrderDetailResponseDto.builder()
-                .id(order.getOrderCode())
-                .borrowDate(borrowDateStr)
-                .dueDate(dueDateStr)
-                .actualReturnDate(actualReturnDateStr)
-                .deadlineDate(deadlineDateStr)
-                .reminderDate(reminderDateStr)
-                .borrowSuccessDate(borrowSuccessDateStr)
-                .deposit(depositFormatted)
-                .rentalFee(rentalFeeFormatted)
-                .lateFee(lateFeeFormatted)
-                .paidOnline(currencyFormatter.format(totalPaidOnline))
-                .total(totalFormatted)
-                .status(status)
-                .overdueDays(overdueDays)
-                .extensionCount((int) extensionCount)
-                .customerName(customerName)
-                .customerPhone(customerPhone)
-                .books(bookItems)
-                .build();
+        return orders.stream().map(borrowOrderMapper::toBorrowOrderDetailResponseDto).collect(java.util.stream.Collectors.toList());
     }
 
     @Override
@@ -891,42 +651,5 @@ public class BorrowOrderServiceImpl implements BorrowOrderService {
                 bookCopyRepository.save(copy);
             }
         }
-    }
-
-    private UserBorrowHistoryDto toHistoryDto(BorrowOrderEntity order) {
-        UserBorrowHistoryDto.UserBorrowHistoryDtoBuilder builder = UserBorrowHistoryDto.builder()
-                .id(order.getId())
-                .orderCode(order.getOrderCode())
-                .status(resolveOrderStatus(order))
-                .borrowDate(order.getBorrowDate())
-                .pickupDate(order.getPickupDate())
-                .dueDate(order.getDueDate())
-                .totalDeposit(order.getTotalDeposit());
-
-        // Lấy thông tin cuốn sách từ order detail đầu tiên (vì mỗi đơn chỉ có 1 cuốn)
-        if (!order.getOrderDetails().isEmpty()) {
-            BorrowOrderDetailEntity detail = order.getOrderDetails().get(0);
-            BookCopyEntity bookCopy = detail.getBookCopy();
-            BookEntity book = bookCopy.getBook();
-            String authorNames = book.getAuthors().stream()
-                    .map(a -> a.getName())
-                    .collect(Collectors.joining(", "));
-
-            builder.bookTitle(book.getTitle())
-                    .bookAuthor(authorNames.isEmpty() ? book.getAuthor() : authorNames)
-                    .bookCoverImage(book.getImageUrl());
-        }
-
-        return builder.build();
-    }
-
-    private String resolveOrderStatus(BorrowOrderEntity order) {
-        // Tự động xác định OVERDUE dựa trên ngày hết hạn
-        if (order.getStatus() == BorrowOrderStatus.BORROWED
-                && order.getDueDate() != null
-                && LocalDate.now().isAfter(order.getDueDate())) {
-            return "OVERDUE";
-        }
-        return order.getStatus().name();
     }
 }
