@@ -4,27 +4,29 @@ import { AlertTriangle, BarChart3, CheckCircle2, ClipboardList, LibraryBig, Shop
 import AdminBreadcrumb from "@/components/features/admin/AdminBreadcrumb";
 import AnalyticsExportControls, { type AnalyticsExportData } from "@/components/features/admin/analytics/AnalyticsExportControls";
 import { ANALYTICS_TEXT, CURRENT_MONTH_RANGE } from "@/constants/admin/analytics";
+import { UI_TEXT } from "@/constants/ui-text";
 import { ADMIN_UI } from "@/constants/ui-text/admin";
 import { type DashboardStats, adminDashboardService } from "@/services/adminDashboard";
-import type { AnalyticsData, MonthRangeSelection } from "@/types/admin-analytics";
-import { MonthRangeControls, buildTrendData, formatMonthPickerValue, normalizeMonthRange } from "./AnalyticsMonthControls";
+import type { AnalyticsData, MonthRangeSelection, TrendData } from "@/types/admin-analytics";
+import { MonthRangeControls, formatMonthPickerValue, monthToAbsoluteIndex, normalizeMonthRange } from "./AnalyticsMonthControls";
 import { AiInsights, BorrowingTrend, LibraryStatus, MostBorrowedBooks, RecentActivities, StatCard, TopCategories } from "./AnalyticsSections";
 
 const ACTIVITY_COLORS = ["border-blue-500", "border-green-500", "border-red-500", "border-yellow-500", "border-purple-500"];
 
 const STATUS_TITLE_MAP: Record<string, string> = {
-    PENDING: "Yêu cầu mượn mới",
-    BORROWED: "Đang mượn",
-    RETURNED: "Trả sách",
-    OVERDUE: "Quá hạn",
-    CANCELLED: "Đã huỷ",
-    READY: "Sẵn sàng lấy",
+    PENDING: UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE.STATUS_PENDING,
+    BORROWED: UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE.STATUS_BORROWED,
+    RETURNED: UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE.STATUS_RETURNED,
+    OVERDUE: UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE.STATUS_OVERDUE,
+    CANCELLED: UI_TEXT.MY_BOOKS_PAGE.CARD.STATUS_CANCELLED,
+    READY: UI_TEXT.ADMIN_BORROW_MANAGEMENT.TABLE.STATUS_READY,
 };
 
 function buildAnalyticsFromStats(stats: DashboardStats): AnalyticsData {
     const totalCopies = stats.totalBooks;
     const borrowed = stats.totalBorrowOrders > 0 ? Math.min(stats.totalBorrowOrders, totalCopies) : 0;
     const available = stats.totalAvailableBooks;
+    const maxCategoryValue = Math.max(1, ...(stats.categories || []).map((category) => category.value));
 
     return {
         statCards: [
@@ -41,8 +43,18 @@ function buildAnalyticsFromStats(stats: DashboardStats): AnalyticsData {
             reserved: 0,
             maintenance: 0,
         },
-        categories: [],
-        borrowedBooks: [],
+        categories: (stats.categories || []).map((category, index) => ({
+            label: category.label,
+            value: Math.round((category.value / maxCategoryValue) * 100),
+            opacity: ["bg-primary", "bg-secondary-container", "bg-tertiary-300", "bg-moss-500", "bg-warning-500"][index % 5],
+        })),
+        borrowedBooks: (stats.borrowedBooks || []).map((book) => ({
+            title: book.title,
+            author: book.author || "—",
+            borrows: book.borrows,
+            status: book.status,
+            statusClass: book.status === "Còn sách" ? "bg-secondary-fixed text-on-secondary-fixed" : "bg-error-50 text-error-700",
+        })),
         recentActivities: (stats.recentActivities || []).map((activity, index) => ({
             title: STATUS_TITLE_MAP[activity.status] || activity.status,
             detail: `${activity.customerName} - "${activity.bookTitle}" (${activity.orderCode})`,
@@ -51,9 +63,29 @@ function buildAnalyticsFromStats(stats: DashboardStats): AnalyticsData {
         })),
         insights: {
             borrowChange: `${stats.booksBorrowedToday} đơn hôm nay`,
-            category: "—",
-            traffic: "—",
+            category: stats.categories?.[0]?.label || "—",
+            traffic: stats.borrowedBooks?.[0]?.title || "—",
         },
+    };
+}
+
+function buildTrendDataFromStats(monthRange: MonthRangeSelection, stats: DashboardStats | null): TrendData {
+    const selected = normalizeMonthRange(monthRange);
+    const firstIndex = monthToAbsoluteIndex(selected.startYear, selected.startMonth);
+    const lastIndex = monthToAbsoluteIndex(selected.endYear, selected.endMonth);
+    const trendLookup = new Map((stats?.monthlyTrends || []).map((point) => [point.month, point]));
+    const points = Array.from({ length: lastIndex - firstIndex + 1 }, (_, index) => {
+        const absoluteIndex = firstIndex + index;
+        const year = Math.floor(absoluteIndex / 12);
+        const month = (absoluteIndex % 12) + 1;
+        return { year, month };
+    });
+
+    return {
+        labels: points.map((point) => (point.year === selected.startYear ? `Th${point.month}` : `Th${point.month}/${String(point.year).slice(-2)}`)),
+        borrowed: points.map((point) => trendLookup.get(`${point.year}-${String(point.month).padStart(2, "0")}`)?.borrowed ?? 0),
+        returned: points.map((point) => trendLookup.get(`${point.year}-${String(point.month).padStart(2, "0")}`)?.returned ?? 0),
+        overdue: points.map((point) => trendLookup.get(`${point.year}-${String(point.month).padStart(2, "0")}`)?.overdue ?? 0),
     };
 }
 
@@ -63,7 +95,7 @@ export default function ThongKePage() {
     const [loading, setLoading] = useState(true);
 
     const normalizedMonthRange = normalizeMonthRange(monthRange);
-    const trendData = buildTrendData(normalizedMonthRange);
+    const trendData = buildTrendDataFromStats(normalizedMonthRange, dashboardStats);
 
     const fetchStats = useCallback(async () => {
         try {

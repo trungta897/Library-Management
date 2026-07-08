@@ -15,12 +15,18 @@ import java.util.List;
 
 @Repository
 public interface BorrowOrderRepository extends JpaRepository<BorrowOrderEntity, Integer> {
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = {"customer", "customer.user"})
+    @Override
+    List<BorrowOrderEntity> findAll();
+
     long countByStatus(BorrowOrderStatus status);
     
     long countByBorrowDate(LocalDate date);
     
     @Query("SELECT COUNT(br) FROM BorrowOrderEntity br WHERE br.status = :status AND br.dueDate < :date")
     long countOverdueBooks(@Param("status") BorrowOrderStatus status, @Param("date") LocalDate date);
+    
+    List<BorrowOrderEntity> findByStatusAndDueDateBefore(BorrowOrderStatus status, LocalDate date);
     
     java.util.Optional<BorrowOrderEntity> findByOrderCode(String orderCode);
 
@@ -38,4 +44,39 @@ public interface BorrowOrderRepository extends JpaRepository<BorrowOrderEntity, 
     java.util.List<BorrowOrderEntity> findByCustomerEmailOrderByCreatedAtDesc(String email);
 
     List<BorrowOrderEntity> findTop5ByOrderByCreatedAtDesc();
+
+    @Query("""
+            SELECT c.name, COUNT(detail.id)
+            FROM BorrowOrderDetailEntity detail
+            JOIN detail.bookCopy copy
+            JOIN copy.book book
+            JOIN book.categories c
+            GROUP BY c.id, c.name
+            ORDER BY COUNT(detail.id) DESC
+            """)
+    List<Object[]> findTopCategoryBorrowStats(Pageable pageable);
+
+    @Query("""
+            SELECT book.title, COALESCE(MIN(author.name), ''), COUNT(detail.id), book.availableQuantity
+            FROM BorrowOrderDetailEntity detail
+            JOIN detail.bookCopy copy
+            JOIN copy.book book
+            LEFT JOIN book.authors author
+            GROUP BY book.id, book.title, book.availableQuantity
+            ORDER BY COUNT(detail.id) DESC
+            """)
+    List<Object[]> findTopBorrowedBookStats(Pageable pageable);
+
+    @Query("""
+            SELECT FUNCTION('YEAR', orderEntity.createdAt),
+                   FUNCTION('MONTH', orderEntity.createdAt),
+                   SUM(CASE WHEN orderEntity.status IN (library.entity.BorrowOrderStatus.BORROWED, library.entity.BorrowOrderStatus.RETURNED, library.entity.BorrowOrderStatus.OVERDUE) THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN orderEntity.status = library.entity.BorrowOrderStatus.RETURNED THEN 1 ELSE 0 END),
+                   SUM(CASE WHEN orderEntity.status = library.entity.BorrowOrderStatus.OVERDUE THEN 1 ELSE 0 END)
+            FROM BorrowOrderEntity orderEntity
+            WHERE orderEntity.createdAt IS NOT NULL
+            GROUP BY FUNCTION('YEAR', orderEntity.createdAt), FUNCTION('MONTH', orderEntity.createdAt)
+            ORDER BY FUNCTION('YEAR', orderEntity.createdAt), FUNCTION('MONTH', orderEntity.createdAt)
+            """)
+    List<Object[]> findMonthlyBorrowTrends();
 }

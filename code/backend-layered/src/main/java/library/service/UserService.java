@@ -1,20 +1,11 @@
 package library.service;
 
-import library.dto.request.GoogleLoginRequest;
-import library.dto.request.LoginRequest;
-import library.dto.request.RegisterRequest;
-import library.dto.response.LoginResponse;
-import library.dto.response.RegisterResponse;
+import library.dto.request.ChangePasswordRequest;
+import library.dto.request.ForgotPasswordRequest;
 
 public interface UserService {
-
-    RegisterResponse register(RegisterRequest request);
-
-    LoginResponse login(LoginRequest request);
-
-    LoginResponse loginWithGoogle(GoogleLoginRequest request);
-
-    library.dto.response.TokenRefreshResponse refreshToken(String refreshToken);
-
-    void logout(String refreshToken);
+    void changePassword(String email, ChangePasswordRequest request);
+    void forgotPassword(ForgotPasswordRequest request);
+    void resetPassword(library.dto.request.ResetPasswordRequest request);
+    library.dto.response.VerifyOtpResponse verifyForgotPasswordOtp(library.dto.request.VerifyOtpRequest request);
 }

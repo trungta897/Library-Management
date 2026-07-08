@@ -26,6 +26,9 @@ spring:
     enabled: true
     baseline-on-migrate: true
     ignore-migration-patterns: "*:missing"
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from-email: ${RESEND_FROM_EMAIL:Lumina Library <onboarding@resend.dev>}
 
 app:
   jwt:
@@ -43,6 +46,11 @@ vnpay:
   command: "pay"
   order-type: "other"
 
-resend:
-  api:
-    key: ${RESEND_API_KEY:}
+minio:
+  url: ${MINIO_URL}
+  access-key: ${MINIO_ACCESS_KEY}
+  secret-key: ${MINIO_SECRET_KEY}
+  bucket-name: ${MINIO_BUCKET_NAME}
+
+recaptcha:
+  secret-key: ${RECAPTCHA_SECRET_KEY}

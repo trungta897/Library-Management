@@ -39,6 +39,8 @@ public class VnPayController {
     private final BookCopyRepository bookCopyRepository;
     private final library.service.AdminBorrowService adminBorrowService;
     private final SystemLogService systemLogService;
+    private final library.service.BookReturnService bookReturnService;
+    private final library.service.EmailService emailService;
 
     @Value("${vnpay.frontend-url:http://localhost:3000}")
     private String frontendUrl;
@@ -93,6 +95,23 @@ public class VnPayController {
             );
             log.info("VNPay IPN: Payment SUCCESS for orderCode={}, transactionNo={}", orderCode, transactionNo);
 
+            // Gửi email biên lai điện tử
+            String toEmail = null;
+            String fullName = null;
+            if (payment.getBorrowOrder() != null && payment.getBorrowOrder().getCustomer() != null) {
+                fullName = payment.getBorrowOrder().getCustomer().getFullName();
+                if (payment.getBorrowOrder().getCustomer().getUser() != null) {
+                    toEmail = payment.getBorrowOrder().getCustomer().getUser().getEmail();
+                } else {
+                    toEmail = payment.getBorrowOrder().getCustomer().getEmail();
+                }
+            }
+            if (toEmail != null && !toEmail.isEmpty()) {
+                String amountStr = params.get("vnp_Amount");
+                String displayAmount = amountStr != null ? String.valueOf(Long.parseLong(amountStr) / 100) : "0";
+                emailService.sendPaymentSuccessEmail(toEmail, fullName, orderCode, displayAmount, transactionNo, params.get("vnp_PayDate"));
+            }
+
             // Auto-approve renewal if it's a renewal fee
             if (payment.getPaymentType() == PaymentType.RENTAL_FEE) {
                 log.info("Auto-approving renewal for orderCode={}", orderCode);
@@ -107,6 +126,17 @@ public class VnPayController {
                     adminBorrowService.updateBorrowStatus(orderCode, library.entity.BorrowOrderStatus.READY);
                 } catch (Exception e) {
                     log.error("Failed to auto-approve new borrow order", e);
+                }
+            } else if (payment.getPaymentType() == PaymentType.FINE) {
+                log.info("Auto-completing fine payment for orderCode={}", orderCode);
+                try {
+                    if (payment.getFineId() != null) {
+                        bookReturnService.completeVnPayFinePayment(payment.getFineId());
+                    } else if (payment.getBookReturnId() != null) {
+                        bookReturnService.finalizeReturnStatus(payment.getBookReturnId());
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to complete fine payment", e);
                 }
             }
         } else {
@@ -154,6 +184,23 @@ public class VnPayController {
                     String.format(library.common.constant.SystemLogConstants.DETAIL_VNPAY_RETURN_SUCCESS, orderCode)
                 );
                 
+                // Gửi email biên lai điện tử (Dành cho trường hợp test localhost khi IPN không gọi được)
+                String toEmail = null;
+                String fullName = null;
+                if (payment.getBorrowOrder() != null && payment.getBorrowOrder().getCustomer() != null) {
+                    fullName = payment.getBorrowOrder().getCustomer().getFullName();
+                    if (payment.getBorrowOrder().getCustomer().getUser() != null) {
+                        toEmail = payment.getBorrowOrder().getCustomer().getUser().getEmail();
+                    } else {
+                        toEmail = payment.getBorrowOrder().getCustomer().getEmail();
+                    }
+                }
+                if (toEmail != null && !toEmail.isEmpty()) {
+                    String amountStr = params.get("vnp_Amount");
+                    String displayAmount = amountStr != null ? String.valueOf(Long.parseLong(amountStr) / 100) : "0";
+                    emailService.sendPaymentSuccessEmail(toEmail, fullName, orderCode, displayAmount, transactionNo, params.get("vnp_PayDate"));
+                }
+                
                 // Trigger auto-approve logic here as fallback (crucial for localhost testing where IPN is unreachable)
                 if (payment.getPaymentType() == PaymentType.RENTAL_FEE) {
                     log.info("Auto-approving renewal (via Return URL) for orderCode={}", orderCode);
@@ -169,6 +216,17 @@ public class VnPayController {
                     } catch (Exception e) {
                         log.error("Failed to auto-approve new borrow order", e);
                     }
+                } else if (payment.getPaymentType() == PaymentType.FINE) {
+                    log.info("Auto-completing fine payment (via Return URL) for orderCode={}", orderCode);
+                    try {
+                        if (payment.getFineId() != null) {
+                            bookReturnService.completeVnPayFinePayment(payment.getFineId());
+                        } else if (payment.getBookReturnId() != null) {
+                            bookReturnService.finalizeReturnStatus(payment.getBookReturnId());
+                        }
+                    } catch (Exception e) {
+                        log.error("Failed to complete fine payment via Return URL", e);
+                    }
                 }
             }
         } else {
@@ -181,9 +239,11 @@ public class VnPayController {
         }
 
         // Redirect to frontend result page with payment details for receipt
+        String paymentTypeStr = payment != null && payment.getPaymentType() != null ? payment.getPaymentType().name() : "";
         StringBuilder redirectUrl = new StringBuilder(frontendUrl)
                 .append("/thanh-toan/ket-qua?status=").append(status)
-                .append("&orderCode=").append(orderCode);
+                .append("&orderCode=").append(orderCode)
+                .append("&type=").append(paymentTypeStr);
                 
         if (RESPONSE_CODE_SUCCESS.equals(responseCode)) {
             try {

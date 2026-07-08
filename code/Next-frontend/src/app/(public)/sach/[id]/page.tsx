@@ -1,11 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { MaterialIcon } from "@/components/base/material-icon";
 import AIChatbot from "@/components/features/book-detail/AIChatbot";
 import BookCover from "@/components/features/book-detail/BookCover";
 import BookInfo from "@/components/features/book-detail/BookInfo";
 import Breadcrumb from "@/components/features/book-detail/Breadcrumb";
 import RelatedBooks from "@/components/features/book-detail/RelatedBooks";
+import ReviewSection from "@/components/features/book-detail/review/ReviewSection";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UI_TEXT } from "@/constants/ui-text";
 import { useBookDetail, useRelatedBooks } from "@/hooks/useBooks";
@@ -14,9 +16,9 @@ import type { RelatedBook } from "@/types/book";
 
 export default function BookDetailPage({ params }: { params: { id: string } }) {
     const bookId = parseInt(params.id, 10);
+    const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
     const { book, loading, error } = useBookDetail(isNaN(bookId) ? null : bookId);
     const { books: relatedBooksData } = useRelatedBooks(bookId, book?.categories?.[0]?.id?.toString(), 4);
-
     // Loading state
     if (loading) {
         return (
@@ -76,7 +78,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
             <div className="grid grid-cols-1 gap-6 md:grid-cols-12 lg:gap-12">
                 {/* Left Column: Book Cover & Actions */}
                 <div className="col-span-1 md:col-span-4 lg:col-span-3">
-                    <BookCover book={bookDetail} />
+                    <BookCover book={bookDetail} onOpenReview={() => setIsReviewModalOpen(true)} />
                 </div>
 
                 {/* Middle Column: Metadata & Details */}
@@ -84,6 +86,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                     <BookInfo book={bookDetail} />
                 </div>
             </div>
+            <ReviewSection bookId={bookId} isReviewModalOpen={isReviewModalOpen} onCloseReviewModal={() => setIsReviewModalOpen(false)} />
 
             {/* Related Books Section */}
             {relatedBooks.length > 0 && <RelatedBooks books={relatedBooks} categoryId={book?.categories?.[0]?.id?.toString()} />}
