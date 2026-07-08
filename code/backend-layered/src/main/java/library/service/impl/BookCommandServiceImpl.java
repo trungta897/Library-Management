@@ -5,6 +5,7 @@ import library.common.exception.CustomBusinessException;
 import library.dto.response.BookResponse;
 import library.entity.BookEntity;
 import library.repository.BookRepository;
+import library.service.CacheInvalidationService;
 import library.service.BookCopyService;
 import library.service.SystemLogService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,7 @@ public class BookCommandServiceImpl implements library.service.BookCommandServic
     private final library.repository.AuthorRepository authorRepository;
     private final SystemLogService systemLogService;
     private final BookCopyService bookCopyService;
+    private final CacheInvalidationService cacheInvalidationService;
     private final library.mapper.BookMapper bookMapper;
 
 
@@ -33,6 +35,8 @@ public class BookCommandServiceImpl implements library.service.BookCommandServic
     @Override
     @Transactional
     public BookResponse createBook(library.dto.request.BookCreateRequest request) {
+        validateUniqueTitle(request.getTitle(), null);
+
         if (request.getIsbn() != null && !request.getIsbn().trim().isEmpty()) {
             if (bookRepository.existsByIsbn(request.getIsbn().trim())) {
                 throw new CustomBusinessException("Sách với mã ISBN này đã tồn tại trong thư viện", HttpStatus.BAD_REQUEST);
@@ -68,6 +72,7 @@ public class BookCommandServiceImpl implements library.service.BookCommandServic
         }
         
         systemLogService.logAction("Thêm sách mới", "Admin đã thêm sách mới: " + savedBook.getTitle());
+        cacheInvalidationService.evictCatalogCaches();
         return bookMapper.toBookResponse(savedBook);
     }
 
@@ -79,7 +84,10 @@ public class BookCommandServiceImpl implements library.service.BookCommandServic
                         "Không tìm thấy sách với ID: " + id,
                         HttpStatus.NOT_FOUND));
 
-        if (request.getTitle() != null) book.setTitle(request.getTitle());
+        if (request.getTitle() != null) {
+            validateUniqueTitle(request.getTitle(), id);
+            book.setTitle(request.getTitle());
+        }
         if (request.getAuthorIds() != null || request.getNewAuthors() != null) {
             book.setAuthors(processAuthors(request.getAuthorIds(), request.getNewAuthors()));
         }
@@ -94,7 +102,36 @@ public class BookCommandServiceImpl implements library.service.BookCommandServic
 
         bookRepository.save(book);
         systemLogService.logAction("Cập nhật sách", "Admin đã cập nhật thông tin sách: " + book.getTitle());
+        cacheInvalidationService.evictCatalogCaches();
         return bookMapper.toBookResponse(book);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBook(Integer id) {
+        BookEntity book = bookRepository.findById(id)
+                .orElseThrow(() -> new CustomBusinessException(
+                        "Không tìm thấy sách với ID: " + id,
+                        HttpStatus.NOT_FOUND));
+
+        bookRepository.delete(book);
+        systemLogService.logAction("Xóa sách", "Admin đã xóa sách: " + book.getTitle());
+        cacheInvalidationService.evictBookCaches();
+        cacheInvalidationService.evictCatalogCaches();
+    }
+
+    private void validateUniqueTitle(String title, Integer currentBookId) {
+        if (title == null || title.trim().isEmpty()) {
+            return;
+        }
+
+        boolean duplicated = currentBookId == null
+                ? bookRepository.existsByNormalizedTitle(title)
+                : bookRepository.existsByNormalizedTitleAndIdNot(title, currentBookId);
+
+        if (duplicated) {
+            throw new CustomBusinessException("Sách với tiêu đề này đã tồn tại. Vui lòng quản lý số lượng bằng bản sao sách thay vì tạo đầu sách trùng.", HttpStatus.BAD_REQUEST);
+        }
     }
 
 

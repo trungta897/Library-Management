@@ -1,8 +1,7 @@
 package library.service.impl;
 
 import library.dto.response.DashboardStatsResponse;
-import library.entity.BorrowOrderEntity;
-import library.entity.BorrowOrderDetailEntity;
+import library.common.constant.CacheNames;
 import library.entity.BorrowOrderStatus;
 import library.entity.BookCopyStatus;
 import library.repository.BookCopyRepository;
@@ -13,9 +12,11 @@ import library.service.AdminDashboardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -31,6 +32,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = CacheNames.ADMIN_DASHBOARD, key = "'stats'")
     public DashboardStatsResponse getDashboardStats() {
         LocalDate today = LocalDate.now();
 
@@ -42,25 +44,14 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         long totalCustomers = customerRepository.count();
         long totalBorrowOrders = borrowOrderRepository.count();
 
-        // Lấy 5 đơn mượn gần nhất
-        List<BorrowOrderEntity> recentOrders = borrowOrderRepository.findTop5ByOrderByCreatedAtDesc();
-        List<DashboardStatsResponse.RecentActivityDto> recentActivities = recentOrders.stream()
-                .map(order -> {
-                    String bookTitle = "";
-                    if (!order.getOrderDetails().isEmpty()) {
-                        BorrowOrderDetailEntity detail = order.getOrderDetails().get(0);
-                        bookTitle = detail.getBookCopy().getBook().getTitle();
-                    }
-                    return DashboardStatsResponse.RecentActivityDto.builder()
-                            .orderCode(order.getOrderCode())
-                            .customerName(order.getCustomer().getFullName())
-                            .bookTitle(bookTitle)
-                            .status(order.getStatus().name())
-                            .createdAt(order.getCreatedAt() != null
-                                    ? order.getCreatedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))
-                                    : "")
-                            .build();
-                })
+        List<DashboardStatsResponse.RecentActivityDto> recentActivities = borrowOrderRepository.findRecentActivityStats(PageRequest.of(0, 5)).stream()
+                .map(row -> DashboardStatsResponse.RecentActivityDto.builder()
+                        .orderCode(toStringValue(row[0]))
+                        .customerName(toStringValue(row[1]))
+                        .bookTitle(toStringValue(row[2]))
+                        .status(row[3] != null ? row[3].toString() : "")
+                        .createdAt(formatDateTime(row[4]))
+                        .build())
                 .collect(Collectors.toList());
 
         List<DashboardStatsResponse.CategoryStatDto> categories = borrowOrderRepository.findTopCategoryBorrowStats(PageRequest.of(0, 5)).stream()
@@ -108,6 +99,17 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
             return number.longValue();
         }
         return 0L;
+    }
+
+    private String toStringValue(Object value) {
+        return value != null ? value.toString() : "";
+    }
+
+    private String formatDateTime(Object value) {
+        if (value instanceof LocalDateTime dateTime) {
+            return dateTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        }
+        return "";
     }
 }
 
