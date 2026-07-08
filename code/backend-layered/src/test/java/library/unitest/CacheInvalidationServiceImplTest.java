@@ -1,6 +1,8 @@
-package library.service.impl;
+package library.unitest;
 
 import library.common.constant.CacheNames;
+import library.service.impl.CacheInvalidationServiceImpl;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.cache.concurrent.ConcurrentMapCacheManager;
@@ -21,8 +23,7 @@ class CacheInvalidationServiceImplTest {
             CacheNames.CATEGORIES_ALL,
             CacheNames.CATEGORIES_WITH_BOOKS,
             CacheNames.AUTHORS_ALL,
-            CacheNames.ADMIN_DASHBOARD
-    );
+            CacheNames.ADMIN_DASHBOARD);
 
     private final CacheInvalidationServiceImpl service = new CacheInvalidationServiceImpl(cacheManager);
 
