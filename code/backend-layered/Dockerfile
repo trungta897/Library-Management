@@ -1,20 +1,28 @@
 FROM eclipse-temurin:24-jdk-noble AS build
-WORKDIR /app
+WORKDIR /workspace
 
 # Install Maven
 RUN apt-get update && apt-get install -y maven && rm -rf /var/lib/apt/lists/*
 
-COPY pom.xml .
-COPY src ./src
-COPY resource ./resource
+COPY . .
 
-# Build the application
-RUN mvn clean package -DskipTests
+RUN set -eux; \
+    if [ -f pom.xml ]; then \
+        project_dir="."; \
+    elif [ -f code/backend-layered/pom.xml ]; then \
+        project_dir="code/backend-layered"; \
+    else \
+        echo "Could not find backend pom.xml in Docker build context"; \
+        exit 1; \
+    fi; \
+    cd "$project_dir"; \
+    mvn clean package -DskipTests; \
+    cp target/*.jar /tmp/app.jar
 
 # Run stage
 FROM eclipse-temurin:24-jre-noble
 WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
+COPY --from=build /tmp/app.jar app.jar
 ENV PORT=8080
 EXPOSE 8080
 ENTRYPOINT ["java","-jar","app.jar"]
