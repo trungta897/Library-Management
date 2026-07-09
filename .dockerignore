@@ -1,0 +1,9 @@
+.git
+.tmp
+**/target
+**/node_modules
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+cloud-sql-proxy.exe
