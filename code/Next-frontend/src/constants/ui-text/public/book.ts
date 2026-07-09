@@ -52,6 +52,7 @@ export const BOOK_LIST = {
 export const BOOK_DETAIL = {
     RELATED_BOOKS_HEADING: "Sách liên quan",
     VIEW_ALL: "Xem tất cả",
+    IMAGE_ALT: "Bìa sách:",
     REVIEWS: "Reviews",
     BY: "By",
     TAGS_CATEGORIES: "Tags & Categories",
