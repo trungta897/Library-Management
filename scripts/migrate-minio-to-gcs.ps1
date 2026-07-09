@@ -14,8 +14,6 @@ param(
 $ErrorActionPreference = "Stop"
 
 if (-not $LocalEndpoint) { $LocalEndpoint = "http://localhost:9000" }
-if (-not $LocalAccessKey) { $LocalAccessKey = "replace-with-local-minio-credential" }
-if (-not $LocalSecretKey) { $LocalSecretKey = "replace-with-local-minio-credential" }
 if (-not $LocalBucket) { $LocalBucket = "library-bucket" }
 if (-not $GcsEndpoint) { $GcsEndpoint = "https://storage.googleapis.com" }
 if (-not $McConfigDir) { $McConfigDir = Join-Path (Split-Path -Parent $PSScriptRoot) ".tmp\mc-config" }
@@ -27,6 +25,8 @@ function Require-Value {
     }
 }
 
+Require-Value "LocalAccessKey / LOCAL_MINIO_ACCESS_KEY" $LocalAccessKey
+Require-Value "LocalSecretKey / LOCAL_MINIO_SECRET_KEY" $LocalSecretKey
 Require-Value "GcsAccessKey / GCS_ACCESS_KEY" $GcsAccessKey
 Require-Value "GcsSecretKey / GCS_SECRET_KEY" $GcsSecretKey
 Require-Value "GcsBucket / GCS_BUCKET" $GcsBucket
